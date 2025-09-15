@@ -1,6 +1,0 @@
-/src
-  /components   # Forms, tables, modals
-  /pages        # Admin pages
-  /services     # API calls to backend
-/package.json
-/README.md
