@@ -1,9 +1,0 @@
-/src
-  /controllers   # API logic
-  /models        # DB models
-  /routes        # REST or GraphQL endpoints
-  /services      # AI / RAG services
-  /utils         # Helpers, logging
-/package.json or requirements.txt
-/.env.example   # Sample secrets
-/README.md
