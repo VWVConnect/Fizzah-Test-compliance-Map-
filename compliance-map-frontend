@@ -1,7 +1,0 @@
-/src
-  /components   # Map, comparison panels, chat, header/footer
-  /pages        # React pages if Next.js
-  /utils        # Helpers, API calls
-  /assets       # Icons, images
-/package.json
-/README.md
