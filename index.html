@@ -6,23 +6,25 @@
 <style>
   body {
     font-family: Arial, sans-serif;
-    text-align: center;
     margin: 0;
-    padding: 0;
+    display: flex;
+    height: 100vh;
+  }
+
+  #map-container {
+    flex: 2;
+    position: relative;
   }
 
   svg {
-    width: 90%;
-    max-width: 1000px;
-    height: auto;
-    margin: 20px auto;
-    display: block;
+    width: 100%;
+    height: 100%;
   }
 
   path {
     fill: #ccc;
     stroke: #333;
-    stroke-width: 0.5;
+    stroke-width: 0.3;
     transition: fill 0.2s;
     cursor: pointer;
   }
@@ -40,34 +42,100 @@
     display: none;
     font-size: 14px;
   }
+
+  #info-panel {
+    flex: 1;
+    background: #f7f7f7;
+    border-left: 1px solid #ddd;
+    padding: 20px;
+    overflow-y: auto;
+  }
+
+  #info-panel h2 {
+    margin-top: 0;
+  }
 </style>
 </head>
 <body>
 
-<h1>Interactive Compliance Map</h1>
-<div id="tooltip"></div>
+<div id="map-container">
+  <div id="tooltip"></div>
+  <svg viewBox="0 0 2000 1001" id="map">
+    <!-- Simplified example countries (replace with full paths for real world map) -->
+    <path id="US" d="M100,200 L200,200 L200,300 L100,300 Z"></path>
+    <path id="FR" d="M500,200 L600,200 L600,300 L500,300 Z"></path>
+    <path id="DE" d="M650,200 L750,200 L750,300 L650,300 Z"></path>
+    <path id="JP" d="M1200,250 L1250,250 L1250,300 L1200,300 Z"></path>
+  </svg>
+</div>
 
-<svg viewBox="0 0 1000 500" id="map">
-  <!-- Example simplified shapes for countries -->
-  <path id="US" d="M100,100 L150,100 L150,150 L100,150 Z"></path>
-  <path id="FR" d="M300,100 L350,100 L350,150 L300,150 Z"></path>
-  <path id="DE" d="M400,100 L450,100 L450,150 L400,150 Z"></path>
-</svg>
+<div id="info-panel">
+  <h2>Jurisdiction Info</h2>
+  <p>Click a country to see compliance information here.</p>
+</div>
 
 <script>
   const tooltip = document.getElementById('tooltip');
+  const infoPanel = document.getElementById('info-panel');
   const paths = document.querySelectorAll('svg path');
+
+  // Example compliance data
+  const complianceData = {
+    US: {
+      name: 'United States',
+      gdpr: 'Not applicable federally, but CCPA & other state laws may apply.',
+      actions: [
+        'Check state-specific privacy laws',
+        'Implement data protection policies',
+      ]
+    },
+    FR: {
+      name: 'France',
+      gdpr: 'EU GDPR applies fully.',
+      actions: [
+        'Appoint DPO if needed',
+        'Implement EU-compliant privacy notices'
+      ]
+    },
+    DE: {
+      name: 'Germany',
+      gdpr: 'Strict GDPR enforcement.',
+      actions: [
+        'Data processing agreements required',
+        'Maintain compliance documentation'
+      ]
+    },
+    JP: {
+      name: 'Japan',
+      gdpr: 'APPI (Act on Protection of Personal Information) applies.',
+      actions: [
+        'Follow APPI guidelines',
+        'Check cross-border data transfer rules'
+      ]
+    }
+  };
 
   paths.forEach(path => {
     path.addEventListener('mousemove', (e) => {
       tooltip.style.display = 'block';
       tooltip.style.left = e.pageX + 10 + 'px';
       tooltip.style.top = e.pageY + 10 + 'px';
-      tooltip.textContent = `Hovered: ${path.id}`;
+      tooltip.textContent = path.id;
     });
 
     path.addEventListener('mouseout', () => {
       tooltip.style.display = 'none';
+    });
+
+    path.addEventListener('click', () => {
+      const data = complianceData[path.id];
+      if(data){
+        infoPanel.innerHTML = `<h2>${data.name}</h2>
+          <p><strong>GDPR / Compliance Info:</strong> ${data.gdpr}</p>
+          <ul>${data.actions.map(a => `<li>${a}</li>`).join('')}</ul>`;
+      } else {
+        infoPanel.innerHTML = `<h2>${path.id}</h2><p>No compliance info available.</p>`;
+      }
     });
   });
 </script>
