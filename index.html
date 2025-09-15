@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Interactive Compliance Map</title>
+<style>
+  body {
+    font-family: Arial, sans-serif;
+    text-align: center;
+    margin: 0;
+    padding: 0;
+  }
+
+  svg {
+    width: 90%;
+    max-width: 1000px;
+    height: auto;
+    margin: 20px auto;
+    display: block;
+  }
+
+  path {
+    fill: #ccc;
+    stroke: #333;
+    stroke-width: 0.5;
+    transition: fill 0.2s;
+    cursor: pointer;
+  }
+
+  path:hover {
+    fill: #4CAF50;
+  }
+
+  #tooltip {
+    position: absolute;
+    background: rgba(255, 255, 255, 0.9);
+    padding: 5px 10px;
+    border-radius: 5px;
+    pointer-events: none;
+    display: none;
+    font-size: 14px;
+  }
+</style>
+</head>
+<body>
+
+<h1>Interactive Compliance Map</h1>
+<div id="tooltip"></div>
+
+<svg viewBox="0 0 1000 500" id="map">
+  <!-- Example simplified shapes for countries -->
+  <path id="US" d="M100,100 L150,100 L150,150 L100,150 Z"></path>
+  <path id="FR" d="M300,100 L350,100 L350,150 L300,150 Z"></path>
+  <path id="DE" d="M400,100 L450,100 L450,150 L400,150 Z"></path>
+</svg>
+
+<script>
+  const tooltip = document.getElementById('tooltip');
+  const paths = document.querySelectorAll('svg path');
+
+  paths.forEach(path => {
+    path.addEventListener('mousemove', (e) => {
+      tooltip.style.display = 'block';
+      tooltip.style.left = e.pageX + 10 + 'px';
+      tooltip.style.top = e.pageY + 10 + 'px';
+      tooltip.textContent = `Hovered: ${path.id}`;
+    });
+
+    path.addEventListener('mouseout', () => {
+      tooltip.style.display = 'none';
+    });
+  });
+</script>
+
+</body>
+</html>
