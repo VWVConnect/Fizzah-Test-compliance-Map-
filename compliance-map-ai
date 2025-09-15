@@ -1,6 +1,0 @@
-/prompts        # Predefined prompt templates
-/src
-  /embedding    # Scripts for embedding legal text
-  /retrieval    # RAG pipeline code
-  /utils        # Helpers, logging
-/README.md
