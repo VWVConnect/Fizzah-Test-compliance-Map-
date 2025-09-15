@@ -1,3 +1,0 @@
-/schemas        # JSON or CSV schema definitions
-/scripts        # ETL scripts, embeddings generator
-/README.md
