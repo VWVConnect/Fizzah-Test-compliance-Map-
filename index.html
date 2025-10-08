@@ -6,9 +6,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin=""/>
   <style>
-    html,body { height:100%; margin:0; font-family:sans-serif; background:#cde6f5; } /* light blue ocean */
+    html,body { height:100%; margin:0; font-family:sans-serif; background:#ffffff; } /* white background */
     #app { display:flex; height:100%; width:100%; }
-    #map { flex:1; height:100%; }
+    #map { flex:1; height:100%; background:#ffffff; } /* white map background */
     #panel { width:400px; border-left:1px solid #ccc; padding:10px; overflow-y:auto; background:#fff; }
     .jur-card { border:1px solid #ddd; border-radius:6px; padding:8px; margin-bottom:10px; background:#fafafa; }
     table { border-collapse:collapse; width:100%; }
@@ -37,16 +37,17 @@ const complianceData = {
 };
 const selected = [];
 
-// --- Map: crop out Antarctica completely ---
+// --- Map: white background, Antarctica hidden ---
 const map = L.map('map', {
   minZoom: 2,
   maxZoom: 6,
   worldCopyJump: false,
-  maxBounds: [[-40, -180], [75, 180]], // ✅ tighter south bound = Antarctica hidden
+  maxBounds: [[-40, -180], [75, 180]], // crop south to remove Antarctica
   maxBoundsViscosity: 1.0
-}).setView([25, 10], 2.2); // balanced view of inhabited world
+}).setView([25, 10], 2.2);
 
-L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+// Use a light basemap (optional) — or comment out to show only country borders
+L.tileLayer('https://{s}.basemaps.cartocdn.com/light_nolabels/{z}/{x}/{y}.png', {
   noWrap: true,
   continuousWorld: false,
   attribution: '© OpenStreetMap contributors'
@@ -124,3 +125,4 @@ function renderCompare(){
 </script>
 </body>
 </html>
+
