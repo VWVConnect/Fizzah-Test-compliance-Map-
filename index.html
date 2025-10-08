@@ -32,165 +32,170 @@
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
 <script>
-// --- Compliance Data (demo) ---
+// --- Demo compliance data ---
 const complianceData = {
   "France": { authority:"CNIL", law:"GDPR + French Data Protection Act", fines:"Up to €20M or 4%", transfers:"SCCs, adequacy", note:"Strong enforcement history" },
   "Germany": { authority:"BfDI / State DPAs", law:"GDPR + BDSG", fines:"Up to €20M or 4%", transfers:"SCCs; state rules", note:"State-level variation" },
   "United Kingdom": { authority:"ICO", law:"UK GDPR + DPA 2018", fines:"Up to £17.5M or 4%", transfers:"UK SCCs", note:"Post-Brexit adequacy" }
 };
 
-// --- Colors ---
-const colors = ["#9b1e66","#e1345c","#e7450f","#f7a723","#ffd900","#4f9f35","#00a191"];
+// --- Color sequence for comparisons ---
+const colorPalette = ["#9b1e66","#e1345c","#e7450f","#f7a723","#ffd900","#4f9f35","#00a191"];
 
 // --- Map setup ---
 const map = L.map('map', {
-  minZoom: 2,
-  maxZoom: 2,
   zoomControl: false,
-  dragging: true,
   doubleClickZoom: false,
   scrollWheelZoom: false,
   boxZoom: false,
   keyboard: false,
-  tap: false,
+  dragging: true,
+  minZoom: 2,
+  maxZoom: 2,
   worldCopyJump: false,
   maxBounds: [[-40, -180], [75, 180]],
   maxBoundsViscosity: 1.0
 }).setView([25, 10], 2);
 
-// --- State ---
+// --- State tracking ---
 let compareMode = false;
-const selected = [];
-const colorAssignments = {};
+let selectedCountries = [];
+let countryLayers = {}; // name -> Leaflet layer
+let colorAssignments = {}; // name -> hex color
 let currentHighlight = null;
 
-// --- Toggle Compare Mode ---
-document.getElementById('modeToggle').onclick = function() {
+// --- Toggle compare mode ---
+const toggleBtn = document.getElementById('modeToggle');
+toggleBtn.onclick = () => {
   compareMode = !compareMode;
-  this.textContent = `Compare Mode: ${compareMode ? 'ON' : 'OFF'}`;
-  this.classList.toggle('active', compareMode);
+  toggleBtn.textContent = `Compare Mode: ${compareMode ? 'ON' : 'OFF'}`;
+  toggleBtn.classList.toggle('active', compareMode);
+
   if (!compareMode) {
+    // Reset compare colors
+    selectedCountries.forEach(name => {
+      if (countryLayers[name]) countryLayers[name].setStyle(baseStyle());
+    });
+    selectedCountries = [];
+    colorAssignments = {};
     renderCompare();
   }
 };
 
-// --- Load GeoJSON + Filter Small Islands ---
-fetch('countries.geojson')
-  .then(r => r.json())
-  .then(geo => {
-    const filteredFeatures = [];
-
-    geo.features.forEach(f => {
-      const name = f.properties.ADMIN || "";
-      if (["Antarctica","Greenland"].includes(name)) return;
-
-      if (f.geometry.type === "MultiPolygon") {
-        const largePolys = f.geometry.coordinates.filter(coords => {
-          const poly = turf.polygon(coords);
-          const area = turf.area(poly);
-          return area > 10000000000;
-        });
-        if (largePolys.length > 0) {
-          filteredFeatures.push({
-            type: "Feature",
-            properties: f.properties,
-            geometry: { type: "MultiPolygon", coordinates: largePolys }
-          });
-        }
-      } else if (f.geometry.type === "Polygon") {
-        const area = turf.area(f);
-        if (area > 10000000000) filteredFeatures.push(f);
-      }
-    });
-
-    const filtered = { type: "FeatureCollection", features: filteredFeatures };
-
-    L.geoJSON(filtered, {
-      style: baseStyle,
-      onEachFeature: onEachCountry
-    }).addTo(map);
-  });
-
+// --- Base style ---
 function baseStyle() {
   return { color:'#222', weight:1, fillColor:'#fdfdfd', fillOpacity:0.9 };
 }
 
-function onEachCountry(feature, layer){
-  const name = feature.properties.ADMIN;
-  layer.on({
-    mouseover: e => e.target.setStyle({ fillOpacity:1 }),
-    mouseout: e => e.target.setStyle({ fillOpacity:0.9 }),
-    click: e => handleClick(name, layer)
+// --- Load GeoJSON ---
+fetch('countries.geojson')
+  .then(r => r.json())
+  .then(geo => {
+    const filtered = { type: "FeatureCollection", features: [] };
+    geo.features.forEach(f => {
+      const name = f.properties.ADMIN || "";
+      if (["Antarctica","Greenland"].includes(name)) return;
+
+      const area = turf.area(f);
+      if (area > 10000000000) filtered.features.push(f);
+    });
+
+    L.geoJSON(filtered, {
+      style: baseStyle,
+      onEachFeature: (feature, layer) => {
+        const name = feature.properties.ADMIN;
+        countryLayers[name] = layer;
+
+        layer.on('mouseover', () => layer.setStyle({ fillOpacity: 1 }));
+        layer.on('mouseout', () => {
+          if (!isCountrySelected(name)) layer.setStyle({ fillOpacity: 0.9 });
+        });
+
+        layer.on('click', () => handleCountryClick(name));
+      }
+    }).addTo(map);
   });
+
+// --- Helpers ---
+function isCountrySelected(name) {
+  return selectedCountries.includes(name);
 }
 
-function handleClick(name, layer){
+function handleCountryClick(name) {
+  const layer = countryLayers[name];
+  if (!layer) return;
+
   if (compareMode) {
-    handleCompareClick(name, layer);
+    if (isCountrySelected(name)) {
+      // Deselect
+      selectedCountries = selectedCountries.filter(n => n !== name);
+      delete colorAssignments[name];
+      layer.setStyle(baseStyle());
+    } else if (selectedCountries.length < colorPalette.length) {
+      // Add with color
+      const color = colorPalette[selectedCountries.length];
+      selectedCountries.push(name);
+      colorAssignments[name] = color;
+      layer.setStyle({ fillColor: color, fillOpacity: 1, color:'#222', weight:1 });
+    }
+    renderCompare();
   } else {
-    handleSingleClick(name, layer);
+    // Single select mode
+    if (currentHighlight) currentHighlight.setStyle(baseStyle());
+    currentHighlight = layer;
+    layer.setStyle({ fillColor: colorPalette[0], fillOpacity: 1, color:'#222', weight:1 });
+    showCountryDetails(name);
   }
 }
 
-function handleSingleClick(name, layer){
-  resetAllLayers();
-
-  layer.setStyle({ fillColor: colors[0], fillOpacity: 1 });
-  currentHighlight = layer;
-
-  const data = complianceData[name];
-  if (data){
-    document.getElementById('details').innerHTML = `
+function showCountryDetails(name) {
+  const d = complianceData[name];
+  const el = document.getElementById('details');
+  if (!d) {
+    el.innerHTML = `<div class="jur-card"><h3>${name}</h3><p>No data yet.</p></div>`;
+  } else {
+    el.innerHTML = `
       <div class="jur-card">
         <h3>${name}</h3>
-        <p><strong>Authority:</strong> ${data.authority}</p>
-        <p><strong>Law:</strong> ${data.law}</p>
-        <p><strong>Transfers:</strong> ${data.transfers}</p>
-        <p><strong>Fines:</strong> ${data.fines}</p>
-        <p>${data.note}</p>
+        <p><strong>Authority:</strong> ${d.authority}</p>
+        <p><strong>Law:</strong> ${d.law}</p>
+        <p><strong>Transfers:</strong> ${d.transfers}</p>
+        <p><strong>Fines:</strong> ${d.fines}</p>
+        <p>${d.note}</p>
       </div>`;
-  } else {
-    document.getElementById('details').innerHTML = `<div class="jur-card"><h3>${name}</h3><p>No data yet.</p></div>`;
   }
 }
 
-function handleCompareClick(name, layer){
-  if (selected.includes(name)) {
-    selected.splice(selected.indexOf(name), 1);
-    delete colorAssignments[name];
-    layer.setStyle(baseStyle());
-  } else if (selected.length < colors.length) {
-    selected.push(name);
-    const color = colors[selected.length - 1];
-    colorAssignments[name] = color;
-    layer.setStyle({ fillColor: color, fillOpacity: 1 });
-  }
-  renderCompare();
-}
-
-function resetAllLayers() {
-  map.eachLayer(layer => {
-    if (layer.setStyle) layer.setStyle(baseStyle());
-  });
-}
-
-function renderCompare(){
+function renderCompare() {
   const compareEl = document.getElementById('compare');
-  if (selected.length===0){ compareEl.textContent='No jurisdictions selected.'; return; }
-  let html='<table><thead><tr><th>Field</th>';
-  selected.forEach(n => html+=`<th style="color:${colorAssignments[n]}">${n}</th>`);
-  html+='</tr></thead><tbody>';
-  const fields=['authority','law','transfers','fines','note'];
-  const labels={authority:'Authority',law:'Law',transfers:'Transfers',fines:'Fines',note:'Note'};
-  fields.forEach(f=>{
-    html+=`<tr><td><strong>${labels[f]}</strong></td>`;
-    selected.forEach(n=> html+=`<td>${(complianceData[n]||{})[f]||''}</td>`);
-    html+='</tr>';
+  if (selectedCountries.length === 0) {
+    compareEl.textContent = 'No jurisdictions selected.';
+    return;
+  }
+
+  let html = '<table><thead><tr><th>Field</th>';
+  selectedCountries.forEach(name => {
+    html += `<th style="color:${colorAssignments[name]}">${name}</th>`;
   });
-  html+='</tbody></table>';
-  compareEl.innerHTML=html;
+  html += '</tr></thead><tbody>';
+
+  const fields = ['authority','law','transfers','fines','note'];
+  const labels = {authority:'Authority',law:'Law',transfers:'Transfers',fines:'Fines',note:'Note'};
+
+  fields.forEach(field => {
+    html += `<tr><td><strong>${labels[field]}</strong></td>`;
+    selectedCountries.forEach(name => {
+      const value = (complianceData[name] || {})[field] || '';
+      html += `<td>${value}</td>`;
+    });
+    html += '</tr>';
+  });
+
+  html += '</tbody></table>';
+  compareEl.innerHTML = html;
 }
 </script>
 </body>
 </html>
+
 
