@@ -8,7 +8,7 @@
   <style>
     html,body { height:100%; margin:0; font-family:sans-serif; background:#ffffff; }
     #app { display:flex; height:100%; width:100%; }
-    #map { flex:1; height:100%; background:#ffffff; } /* pure white background */
+    #map { flex:1; height:100%; background:#ffffff; }
     #panel { width:400px; border-left:1px solid #ccc; padding:10px; overflow-y:auto; background:#fff; }
     .jur-card { border:1px solid #ddd; border-radius:6px; padding:8px; margin-bottom:10px; background:#fafafa; }
     table { border-collapse:collapse; width:100%; }
@@ -37,22 +37,34 @@ const complianceData = {
 };
 const selected = [];
 
-// --- Map setup: no base tiles, just vector borders ---
+// --- Map: plain white background, no oceans, Antarctica removed ---
 const map = L.map('map', {
   minZoom: 2,
   maxZoom: 6,
   worldCopyJump: false,
-  maxBounds: [[-40, -180], [75, 180]], // crop out Antarctica
+  maxBounds: [[-40, -180], [75, 180]], // crop south to hide Antarctica
   maxBoundsViscosity: 1.0
 }).setView([25, 10], 2.2);
 
-// --- No tile layer added = pure white background ---
-// Just the country GeoJSON overlay below.
-
+// --- Load countries and filter out tiny islands ---
 fetch('countries.geojson')
   .then(r => r.json())
   .then(geo => {
-    L.geoJSON(geo, {
+    const filtered = {
+      type: "FeatureCollection",
+      features: geo.features.filter(f => {
+        // Rough bounding box filter — remove tiny polygons
+        const b = f.bbox || null;
+        if (!b) return true; // keep if no bbox
+        const width = Math.abs(b[2] - b[0]);
+        const height = Math.abs(b[3] - b[1]);
+        const area = width * height;
+        // Remove very small ones (islands etc.)
+        return area > 1; // tweak this if you still see small islands
+      })
+    };
+
+    L.geoJSON(filtered, {
       style: { color:'#222', weight:1, fillColor:'#fdfdfd', fillOpacity:0.9 },
       onEachFeature: onEachCountry
     }).addTo(map);
@@ -120,3 +132,4 @@ function renderCompare(){
 </script>
 </body>
 </html>
+
