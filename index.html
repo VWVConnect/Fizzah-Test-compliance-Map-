@@ -2,197 +2,236 @@
 <html>
 <head>
   <meta charset="utf-8" />
-  <title>GDPR Compliance Map</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>GDPR Compliance Map — Click & Compare</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin=""/>
   <style>
-    html,body { height:100%; margin:0; font-family:sans-serif; background:#ffffff; }
-    #app { display:flex; height:100%; width:100%; }
-    #map { flex:1; height:100%; background:#ffffff; cursor:pointer; }
-    #panel { width:400px; border-left:1px solid #ccc; padding:10px; overflow-y:auto; background:#fff; }
-    .jur-card { border:1px solid #ddd; border-radius:6px; padding:8px; margin-bottom:10px; background:#fafafa; }
-    table { border-collapse:collapse; width:100%; }
-    th,td { border:1px solid #ddd; padding:6px; font-size:13px; }
-    button { padding:6px 10px; margin:5px 3px; cursor:pointer; border:none; border-radius:4px; background:#222; color:#fff; }
-    button.active { background:#555; }
+    html,body { height:100%; margin:0; font-family:system-ui,Arial,sans-serif; background:#fff; }
+    #app { display:flex; height:100vh; }
+    #map { flex:1; background:#ffffff; }
+    #panel { width:380px; border-left:1px solid #ddd; padding:12px; box-sizing:border-box; }
+    .jur-card { border:1px solid #eee; border-radius:6px; padding:8px; margin-bottom:10px; background:#fafafa; }
+    .controls { margin-bottom:8px; display:flex; gap:8px; flex-wrap:wrap; }
+    button { padding:8px 10px; border-radius:6px; border:none; background:#222; color:#fff; cursor:pointer; }
+    button.active { background:#007bff; }
+    .legend { margin-top:10px; }
+    .legend-item { display:flex; align-items:center; gap:8px; margin-bottom:6px; }
+    .swatch { width:18px; height:14px; border-radius:3px; border:1px solid #999; display:inline-block; }
+    table { width:100%; border-collapse:collapse; margin-top:8px; }
+    th, td { border:1px solid #eee; padding:6px; font-size:13px; text-align:left; }
+    /* make SVG country paths show pointer */
+    .country { cursor:pointer; }
   </style>
 </head>
 <body>
 <div id="app">
   <div id="map"></div>
   <div id="panel">
-    <h2>GDPR Compliance Map</h2>
-    <button id="modeToggle">Compare Mode: OFF</button>
-    <div id="details">Click a country to view details.</div>
-    <h3>Compare</h3>
-    <div id="compare">No jurisdictions selected.</div>
+    <h2 style="margin:6px 0 12px 0;">GDPR Compliance Map</h2>
+
+    <div class="controls">
+      <button id="toggleCompare">Compare Mode: OFF</button>
+      <button id="clearAll">Clear</button>
+    </div>
+
+    <div id="details" class="jur-card">Click a country to view details (single-select mode), or toggle Compare Mode to select multiple.</div>
+
+    <div class="legend" id="legend"></div>
+
+    <h3 style="margin-top:14px">Compare</h3>
+    <div id="compareArea">No jurisdictions selected.</div>
   </div>
 </div>
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
 <script>
-// Demo GDPR data
+/*
+  Working, robust map:
+  - Click country: highlights in first color (single mode)
+  - Toggle compare -> click countries to assign colours in order
+  - Clicking selected country in compare toggles it off (frees the color)
+  - No zoom (mousewheel/dbl/touch) but panning allowed
+  - Legend shows current assignments
+*/
+
+// Demo data for details (replace with your real JSON later)
 const complianceData = {
   "France": { authority:"CNIL", law:"GDPR + French Data Protection Act", fines:"Up to €20M or 4%", transfers:"SCCs, adequacy", note:"Strong enforcement history" },
   "Germany": { authority:"BfDI / State DPAs", law:"GDPR + BDSG", fines:"Up to €20M or 4%", transfers:"SCCs; state rules", note:"State-level variation" },
   "United Kingdom": { authority:"ICO", law:"UK GDPR + DPA 2018", fines:"Up to £17.5M or 4%", transfers:"UK SCCs", note:"Post-Brexit adequacy" }
 };
 
-// Comparison colors
-const colorPalette = ["#9b1e66","#e1345c","#e7450f","#f7a723","#ffd900","#4f9f35","#00a191"];
+// Palette requested (use in order)
+const palette = ["#9b1e66","#e1345c","#e7450f","#f7a723","#ffd900","#4f9f35","#00a191"];
 
-// Map setup
+// Internal state
+let compareMode = false;
+let assigned = {};          // countryName -> color
+let assignedOrder = [];     // countryName in order assigned
+let layerByName = {};       // countryName -> leaflet layer
+let currentSingle = null;   // currently single-selected layer
+
+// initialize map (no tiles; white background + vector overlay)
 const map = L.map('map', {
   zoomControl: false,
   doubleClickZoom: false,
   scrollWheelZoom: false,
+  touchZoom: false,
   boxZoom: false,
   keyboard: false,
   dragging: true,
-  minZoom: 2,
-  maxZoom: 2,
   worldCopyJump: false,
   maxBounds: [[-40, -180], [75, 180]],
   maxBoundsViscosity: 1.0
-}).setView([25, 10], 2);
+}).setView([25,10], 2);
 
-// State
-let compareMode = false;
-let selectedCountries = [];
-let countryLayers = {};
-let colorAssignments = {};
-let currentHighlight = null;
+// helper style for unselected country
+function baseStyle(){
+  return { color:'#222', weight:1, fillColor:'#fafafa', fillOpacity:1, className:'country', interactive:true };
+}
 
-// Toggle compare mode
-const toggleBtn = document.getElementById('modeToggle');
+// helper to set highlight
+function setLayerColor(layer, color){
+  layer.setStyle({ fillColor: color, fillOpacity:1, color:'#222', weight:1 });
+  if (layer.bringToFront) try{ layer.bringToFront(); }catch(e){}
+}
+
+// helper to reset a layer to base
+function resetLayer(layer){
+  layer.setStyle(baseStyle());
+}
+
+// load GeoJSON from a reliable source (no local file required)
+const GEO = 'https://raw.githubusercontent.com/datasets/geo-countries/master/data/countries.geojson';
+
+fetch(GEO)
+  .then(r => {
+    if (!r.ok) throw new Error('Failed to fetch GeoJSON: ' + r.status);
+    return r.json();
+  })
+  .then(data => {
+    // remove only Antarctica so map doesn't show it
+    data.features = data.features.filter(f => f.properties && f.properties.ADMIN !== 'Antarctica');
+
+    L.geoJSON(data, {
+      style: baseStyle,
+      onEachFeature: (feature, layer) => {
+        const name = feature.properties.ADMIN;
+        layerByName[name] = layer;
+
+        // ensure pointer cursor
+        // (style's className handles it)
+        // add interactions
+        layer.on('click', () => handleClick(name));
+        layer.on('mouseover', () => {
+          const sel = assigned[name];
+          if (!sel && layer !== currentSingle) layer.setStyle({ fillOpacity: 0.85 });
+        });
+        layer.on('mouseout', () => {
+          const sel = assigned[name];
+          if (!sel && layer !== currentSingle) resetLayer(layer);
+        });
+      }
+    }).addTo(map);
+  })
+  .catch(err => {
+    document.getElementById('details').innerHTML = '<div style="color:red">Error loading map: ' + err.message + '</div>';
+    console.error(err);
+  });
+
+// UI controls
+const toggleBtn = document.getElementById('toggleCompare');
+const clearBtn = document.getElementById('clearAll');
 toggleBtn.onclick = () => {
   compareMode = !compareMode;
   toggleBtn.textContent = `Compare Mode: ${compareMode ? 'ON' : 'OFF'}`;
   toggleBtn.classList.toggle('active', compareMode);
 
+  // when leaving compare mode, clear compare selections (but keep single highlight cleared too)
   if (!compareMode) {
-    // Clear compare selections
-    selectedCountries.forEach(name => {
-      if (countryLayers[name]) countryLayers[name].setStyle(baseStyle());
-    });
-    selectedCountries = [];
-    colorAssignments = {};
-    renderCompare();
+    clearAllComparisons();
   }
 };
+clearBtn.onclick = () => {
+  // clear everything
+  clearAllComparisons();
+  if (currentSingle) { resetLayer(currentSingle); currentSingle = null; document.getElementById('details').innerHTML = 'Click a country to view details.'; }
+};
 
-// Base style
-function baseStyle() {
-  return { color:'#222', weight:1, fillColor:'#f9f9f9', fillOpacity:1 };
-}
-
-// Load countries
-fetch('countries.geojson')
-  .then(r => r.json())
-  .then(geo => {
-    // Filter Antarctica only
-    const filtered = {
-      type: "FeatureCollection",
-      features: geo.features.filter(f => f.properties.ADMIN !== "Antarctica")
-    };
-
-    L.geoJSON(filtered, {
-      style: baseStyle,
-      onEachFeature: (feature, layer) => {
-        const name = feature.properties.ADMIN;
-        countryLayers[name] = layer;
-
-        layer.on('click', () => handleCountryClick(name));
-        layer.on('mouseover', () => {
-          if (!isCountrySelected(name) && currentHighlight !== layer) {
-            layer.setStyle({ fillOpacity: 0.8 });
-          }
-        });
-        layer.on('mouseout', () => {
-          if (!isCountrySelected(name) && currentHighlight !== layer) {
-            layer.setStyle(baseStyle());
-          }
-        });
-      }
-    }).addTo(map);
-  });
-
-// Click logic
-function isCountrySelected(name) {
-  return selectedCountries.includes(name);
-}
-
-function handleCountryClick(name) {
-  const layer = countryLayers[name];
+// click logic
+function handleClick(name){
+  const layer = layerByName[name];
   if (!layer) return;
 
   if (compareMode) {
-    if (isCountrySelected(name)) {
-      selectedCountries = selectedCountries.filter(n => n !== name);
-      delete colorAssignments[name];
-      layer.setStyle(baseStyle());
-    } else if (selectedCountries.length < colorPalette.length) {
-      const color = colorPalette[selectedCountries.length];
-      selectedCountries.push(name);
-      colorAssignments[name] = color;
-      layer.setStyle({ fillColor: color, fillOpacity: 1, color:'#333', weight:1 });
+    // toggle compare selection
+    if (assigned[name]) {
+      // deselect and free color
+      const freedColor = assigned[name];
+      delete assigned[name];
+      assignedOrder = assignedOrder.filter(n => n !== name);
+      resetLayer(layer);
+    } else {
+      // assign first unused palette color
+      const used = new Set(Object.values(assigned));
+      const color = palette.find(c => !used.has(c));
+      if (!color) {
+        alert('Maximum compare selections reached (' + palette.length + ')');
+        return;
+      }
+      assigned[name] = color;
+      assignedOrder.push(name);
+      setLayerColor(layer, color);
     }
-    renderCompare();
+    updateLegend();
+    renderCompareTable();
   } else {
-    if (currentHighlight) currentHighlight.setStyle(baseStyle());
-    currentHighlight = layer;
-    layer.setStyle({ fillColor: colorPalette[0], fillOpacity: 1, color:'#333', weight:1 });
-    showCountryDetails(name);
+    // single-select mode: clear previous and highlight this
+    if (currentSingle && currentSingle !== layer) resetLayer(currentSingle);
+    // also if it was selected in compare, keep compare behavior (but user left compareMode false so it should be cleared previously)
+    currentSingle = layer;
+    setLayerColor(layer, palette[0]);
+    showDetails(name);
   }
 }
 
-// Panel logic
-function showCountryDetails(name) {
+// show details in panel
+function showDetails(name){
   const d = complianceData[name];
   const el = document.getElementById('details');
   if (!d) {
-    el.innerHTML = `<div class="jur-card"><h3>${name}</h3><p>No data yet.</p></div>`;
+    el.innerHTML = `<div class="jur-card"><h3>${name}</h3><p>No data available yet.</p></div>`;
   } else {
     el.innerHTML = `
       <div class="jur-card">
         <h3>${name}</h3>
-        <p><strong>Authority:</strong> ${d.authority}</p>
+        <p><strong>Supervisory Authority:</strong> ${d.authority}</p>
         <p><strong>Law:</strong> ${d.law}</p>
         <p><strong>Transfers:</strong> ${d.transfers}</p>
         <p><strong>Fines:</strong> ${d.fines}</p>
-        <p>${d.note}</p>
+        <p>${d.note || ''}</p>
       </div>`;
   }
 }
 
-function renderCompare() {
-  const compareEl = document.getElementById('compare');
-  if (selectedCountries.length === 0) {
-    compareEl.textContent = 'No jurisdictions selected.';
-    return;
-  }
-
-  let html = '<table><thead><tr><th>Field</th>';
-  selectedCountries.forEach(name => {
-    html += `<th style="color:${colorAssignments[name]}">${name}</th>`;
+// legend UI
+function updateLegend(){
+  const legend = document.getElementById('legend');
+  legend.innerHTML = '';
+  if (assignedOrder.length === 0) { legend.innerHTML = '<div style="color:#666;font-size:13px">No comparisons selected.</div>'; return; }
+  assignedOrder.forEach(name => {
+    const color = assigned[name];
+    const div = document.createElement('div');
+    div.className = 'legend-item';
+    div.innerHTML = `<div class="swatch" style="background:${color}"></div><div style="font-size:13px">${name}</div>`;
+    legend.appendChild(div);
   });
-  html += '</tr></thead><tbody>';
+}
+
+// compare table UI
+function renderCompareTable(){
+  const el = document.getElementById('compareArea');
+  if (assignedOrder.length === 0) { el.textContent = 'No jurisdictions selected.'; return; }
 
   const fields = ['authority','law','transfers','fines','note'];
-  const labels = {authority:'Authority',law:'Law',transfers:'Transfers',fines:'Fines',note:'Note'};
-
-  fields.forEach(field => {
-    html += `<tr><td><strong>${labels[field]}</strong></td>`;
-    selectedCountries.forEach(name => {
-      const value = (complianceData[name] || {})[field] || '';
-      html += `<td>${value}</td>`;
-    });
-    html += '</tr>';
-  });
-
-  html += '</tbody></table>';
-  compareEl.innerHTML = html;
-}
-</script>
-</body>
-</html>
+  const labels = {au
