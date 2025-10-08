@@ -37,14 +37,14 @@ const complianceData = {
 };
 const selected = [];
 
-// --- Create map: limit both poles and prevent repeat ---
+// --- Create map (no poles, no repeats) ---
 const map = L.map('map', {
   minZoom: 2,
   maxZoom: 6,
   worldCopyJump: false,
-  maxBounds: [[-55, -180], [75, 180]], // crop Antarctica & Arctic
+  maxBounds: [[-45, -180], [75, 180]], // ✅ cropped Antarctica & Arctic
   maxBoundsViscosity: 1.0
-}).setView([25, 10], 2.1); // center view for balanced continents
+}).setView([25, 10], 2.1); // nice central view
 
 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
   noWrap: true,
@@ -52,8 +52,8 @@ L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
   attribution: '© OpenStreetMap contributors'
 }).addTo(map);
 
-// --- Load GeoJSON (country polygons) ---
-fetch('countries.geojson')
+// --- Load GeoJSON world polygons ---
+fetch('data/countries.geojson')
   .then(r => r.json())
   .then(geo => {
     L.geoJSON(geo, {
