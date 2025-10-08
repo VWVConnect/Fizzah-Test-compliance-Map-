@@ -37,30 +37,42 @@ const complianceData = {
 };
 const selected = [];
 
-// --- Map: plain white background, no oceans, Antarctica removed ---
+// --- Map setup ---
 const map = L.map('map', {
   minZoom: 2,
   maxZoom: 6,
   worldCopyJump: false,
-  maxBounds: [[-40, -180], [75, 180]], // crop south to hide Antarctica
+  maxBounds: [[-40, -180], [75, 180]], // remove Antarctica
   maxBoundsViscosity: 1.0
 }).setView([25, 10], 2.2);
 
-// --- Load countries and filter out tiny islands ---
+// --- Load and clean GeoJSON ---
 fetch('countries.geojson')
   .then(r => r.json())
   .then(geo => {
+    const excludedNames = [
+      "Antarctica", "Greenland", "Falkland Islands", "French Southern Territories",
+      "Saint Helena", "Northern Mariana Islands", "Guam", "American Samoa",
+      "Bermuda", "Faroe Islands", "Cayman Islands", "Saint Pierre and Miquelon",
+      "Norfolk Island", "Pitcairn Islands", "Christmas Island", "Cocos Islands",
+      "Tokelau", "Wallis and Futuna", "Montserrat", "Anguilla", "Gibraltar",
+      "San Marino", "Monaco", "Liechtenstein", "Vatican", "Andorra"
+    ];
+
     const filtered = {
       type: "FeatureCollection",
       features: geo.features.filter(f => {
-        // Rough bounding box filter — remove tiny polygons
+        const name = f.properties.ADMIN || "";
+        if (excludedNames.includes(name)) return false;
+
         const b = f.bbox || null;
-        if (!b) return true; // keep if no bbox
+        if (!b) return true;
         const width = Math.abs(b[2] - b[0]);
         const height = Math.abs(b[3] - b[1]);
         const area = width * height;
-        // Remove very small ones (islands etc.)
-        return area > 1; // tweak this if you still see small islands
+
+        // Increase threshold to remove small islands completely
+        return area > 5; 
       })
     };
 
@@ -132,4 +144,3 @@ function renderCompare(){
 </script>
 </body>
 </html>
-
