@@ -11,7 +11,6 @@
     #map { flex:1; height:100%; }
     #panel { width:400px; border-left:1px solid #ccc; padding:10px; overflow-y:auto; }
     .jur-card { border:1px solid #ddd; border-radius:6px; padding:8px; margin-bottom:10px; background:#fafafa; }
-    .highlighted { fill:#3388ff !important; }
     table { border-collapse:collapse; width:100%; }
     th,td { border:1px solid #ddd; padding:6px; font-size:13px; }
     button { padding:5px 8px; margin-top:5px; }
@@ -30,7 +29,7 @@
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
 <script>
-// --- Data for demo (replace or fetch from /data/ files) ---
+// Demo data (replace with your JSON files later)
 const complianceData = {
   "France": { authority:"CNIL", law:"GDPR + French Data Protection Act", fines:"Up to €20M or 4%", transfers:"SCCs, adequacy", note:"Strong enforcement history" },
   "Germany": { authority:"BfDI / State DPAs", law:"GDPR + BDSG", fines:"Up to €20M or 4%", transfers:"SCCs; state rules", note:"State-level variation" },
@@ -38,16 +37,25 @@ const complianceData = {
 };
 const selected = [];
 
-const map = L.map('map').setView([20,0], 2);
+// Create map — disable wrapping and limit panning
+const map = L.map('map', {
+  minZoom: 2,
+  worldCopyJump: false,
+  maxBounds: [[-85,-180],[85,180]], // lock to world bounds
+  maxBoundsViscosity: 1.0
+}).setView([20, 0], 2);
+
 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-  attribution:'© OpenStreetMap contributors'
+  noWrap: true,             // prevent horizontal repetition
+  continuousWorld: false,   // keep only one world
+  attribution: '© OpenStreetMap contributors'
 }).addTo(map);
 
-// --- Load world polygons ---
+// Load world polygons
 fetch('countries.geojson')
   .then(r => r.json())
   .then(geo => {
-    const layer = L.geoJSON(geo, {
+    L.geoJSON(geo, {
       style: { color:'#555', weight:1, fillColor:'#f8f8f8', fillOpacity:0.6 },
       onEachFeature: onEachCountry
     }).addTo(map);
@@ -64,8 +72,8 @@ function onEachCountry(feature, layer){
 
 const detailsEl = document.getElementById('details');
 const compareEl = document.getElementById('compare');
+
 function countryClicked(name, layer){
-  // Highlight
   if (window.currentHighlight) window.currentHighlight.setStyle({ fillColor:'#f8f8f8' });
   layer.setStyle({ fillColor:'#66b3ff' });
   window.currentHighlight = layer;
