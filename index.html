@@ -1,144 +1,148 @@
-<!DOCTYPE html>
-<html lang="en">
+<!doctype html>
+<html>
 <head>
-<meta charset="UTF-8">
-<title>Interactive Compliance Map</title>
-<style>
-  body {
-    font-family: Arial, sans-serif;
-    margin: 0;
-    display: flex;
-    height: 100vh;
-  }
-
-  #map-container {
-    flex: 2;
-    position: relative;
-  }
-
-  svg {
-    width: 100%;
-    height: 100%;
-  }
-
-  path {
-    fill: #ccc;
-    stroke: #333;
-    stroke-width: 0.3;
-    transition: fill 0.2s;
-    cursor: pointer;
-  }
-
-  path:hover {
-    fill: #4CAF50;
-  }
-
-  #tooltip {
-    position: absolute;
-    background: rgba(255, 255, 255, 0.9);
-    padding: 5px 10px;
-    border-radius: 5px;
-    pointer-events: none;
-    display: none;
-    font-size: 14px;
-  }
-
-  #info-panel {
-    flex: 1;
-    background: #f7f7f7;
-    border-left: 1px solid #ddd;
-    padding: 20px;
-    overflow-y: auto;
-  }
-
-  #info-panel h2 {
-    margin-top: 0;
-  }
-</style>
+  <meta charset="utf-8" />
+  <title>GDPR Compliance Map (Demo)</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <!-- Leaflet CSS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+    integrity="sha384-somehash" crossorigin=""/>
+  <style>
+    body { margin:0; font-family: system-ui, Arial, sans-serif; }
+    #app { display:flex; height:100vh; }
+    #map { flex:1; }
+    #panel { width:420px; border-left:1px solid #ddd; padding:12px; overflow:auto; }
+    .jur-card { border:1px solid #eee; padding:10px; margin-bottom:10px; border-radius:6px; }
+    .cmp-list { margin-top:8px; }
+    table { width:100%; border-collapse:collapse; }
+    th, td { border:1px solid #eee; padding:6px; text-align:left; font-size:13px; }
+    button { padding:6px 10px; margin-top:6px; }
+  </style>
 </head>
 <body>
-
-<div id="map-container">
-  <div id="tooltip"></div>
-  <svg viewBox="0 0 2000 1001" id="map">
-    <!-- Simplified example countries (replace with full paths for real world map) -->
-    <path id="US" d="M100,200 L200,200 L200,300 L100,300 Z"></path>
-    <path id="FR" d="M500,200 L600,200 L600,300 L500,300 Z"></path>
-    <path id="DE" d="M650,200 L750,200 L750,300 L650,300 Z"></path>
-    <path id="JP" d="M1200,250 L1250,250 L1250,300 L1200,300 Z"></path>
-  </svg>
+<div id="app">
+  <div id="map"></div>
+  <div id="panel">
+    <h2>GDPR Compliance Map — Demo</h2>
+    <div id="details">Click a country on the map to see summary</div>
+    <h3>Compare</h3>
+    <div id="compareArea">No jurisdictions selected.</div>
+  </div>
 </div>
 
-<div id="info-panel">
-  <h2>Jurisdiction Info</h2>
-  <p>Click a country to see compliance information here.</p>
-</div>
+<!-- Leaflet JS -->
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+  integrity="sha384-somehash" crossorigin=""></script>
 
 <script>
-  const tooltip = document.getElementById('tooltip');
-  const infoPanel = document.getElementById('info-panel');
-  const paths = document.querySelectorAll('svg path');
+/*
+  Demo map + compare:
+  - In production: replace 'catalogue' with an external JSON (catalogue.json)
+  - Replace geojson with a proper world/EU GeoJSON file and match ISO codes
+*/
 
-  // Example compliance data
-  const complianceData = {
-    US: {
-      name: 'United States',
-      gdpr: 'Not applicable federally, but CCPA & other state laws may apply.',
-      actions: [
-        'Check state-specific privacy laws',
-        'Implement data protection policies',
-      ]
-    },
-    FR: {
-      name: 'France',
-      gdpr: 'EU GDPR applies fully.',
-      actions: [
-        'Appoint DPO if needed',
-        'Implement EU-compliant privacy notices'
-      ]
-    },
-    DE: {
-      name: 'Germany',
-      gdpr: 'Strict GDPR enforcement.',
-      actions: [
-        'Data processing agreements required',
-        'Maintain compliance documentation'
-      ]
-    },
-    JP: {
-      name: 'Japan',
-      gdpr: 'APPI (Act on Protection of Personal Information) applies.',
-      actions: [
-        'Follow APPI guidelines',
-        'Check cross-border data transfer rules'
-      ]
-    }
-  };
+// --- sample catalogue + data (tiny demo) ---
+const catalogue = [
+  { id:'fr', name:'France', iso:'FR', center:[46.7,2.5] },
+  { id:'de', name:'Germany', iso:'DE', center:[51.1,10.4] },
+  { id:'uk', name:'United Kingdom', iso:'GB', center:[55.4,-3.4] }
+];
 
-  paths.forEach(path => {
-    path.addEventListener('mousemove', (e) => {
-      tooltip.style.display = 'block';
-      tooltip.style.left = e.pageX + 10 + 'px';
-      tooltip.style.top = e.pageY + 10 + 'px';
-      tooltip.textContent = path.id;
-    });
+const dataStore = {
+  'fr': {
+    id:'fr', name:'France', supervisory_authority:'CNIL', sa_url:'https://www.cnil.fr',
+    law:'GDPR (EU) + French Data Protection Act',
+    data_transfers:'SCCs, adequacy for some transfers; national restrictions on health data.',
+    fines:'Up to €20M or 4% global turnover (GDPR), CNIL notable fines exist.',
+    last_updated:'2025-06-01'
+  },
+  'de': {
+    id:'de', name:'Germany', supervisory_authority:'BfDI / State DPAs', sa_url:'https://www.bfdi.bund.de',
+    law:'GDPR (EU) + Federal Data Protection Act (BDSG).',
+    data_transfers:'SCCs; special rules for employment data and state-level variations.',
+    fines:'Up to €20M or 4% global turnover; fines frequently enforced at state-level.',
+    last_updated:'2025-05-20'
+  },
+  'uk': {
+    id:'uk', name:'United Kingdom', supervisory_authority:'ICO', sa_url:'https://ico.org.uk',
+    law:'UK GDPR (retained) + Data Protection Act 2018.',
+    data_transfers:'UK adequacy decisions for EU/EEA may change; use UK SCCs or adequacy if present.',
+    fines:'Up to £17.5M or 4% of global turnover (UK rules).',
+    last_updated:'2025-04-12'
+  }
+};
 
-    path.addEventListener('mouseout', () => {
-      tooltip.style.display = 'none';
-    });
+// --- map init ---
+const map = L.map('map', { zoomControl:true }).setView([54, 10], 4);
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+  attribution: '© OpenStreetMap contributors'
+}).addTo(map);
 
-    path.addEventListener('click', () => {
-      const data = complianceData[path.id];
-      if(data){
-        infoPanel.innerHTML = `<h2>${data.name}</h2>
-          <p><strong>GDPR / Compliance Info:</strong> ${data.gdpr}</p>
-          <ul>${data.actions.map(a => `<li>${a}</li>`).join('')}</ul>`;
-      } else {
-        infoPanel.innerHTML = `<h2>${path.id}</h2><p>No compliance info available.</p>`;
-      }
-    });
+// Add markers for demo jurisdictions (replace with geojson layers in prod)
+catalogue.forEach(j => {
+  const marker = L.circleMarker(j.center, { radius:8 }).addTo(map);
+  marker.bindTooltip(j.name);
+  marker.on('click', () => showDetails(j.id));
+});
+
+// UI: details + compare
+const detailsEl = document.getElementById('details');
+const compareArea = document.getElementById('compareArea');
+const selectedForCompare = [];
+
+// Show details when clicked
+function showDetails(id) {
+  const d = dataStore[id];
+  detailsEl.innerHTML = `
+    <div class="jur-card">
+      <h3>${escapeHtml(d.name)}</h3>
+      <p><strong>Supervisory Authority:</strong> <a href="${d.sa_url}" target="_blank" rel="noopener">${escapeHtml(d.supervisory_authority)}</a></p>
+      <p><strong>Law:</strong> ${escapeHtml(d.law)}</p>
+      <p><strong>Data transfers:</strong> ${escapeHtml(d.data_transfers)}</p>
+      <p><strong>Fines:</strong> ${escapeHtml(d.fines)}</p>
+      <p><small>Last updated: ${escapeHtml(d.last_updated)}</small></p>
+      <button onclick="addToCompare('${d.id}')">Add to compare</button>
+    </div>
+  `;
+}
+
+// Manage compare list
+function addToCompare(id) {
+  if (!selectedForCompare.includes(id)) {
+    selectedForCompare.push(id);
+  }
+  renderCompare();
+}
+function removeFromCompare(id) {
+  const idx = selectedForCompare.indexOf(id);
+  if (idx !== -1) selectedForCompare.splice(idx,1);
+  renderCompare();
+}
+function renderCompare(){
+  if (selectedForCompare.length===0) {
+    compareArea.innerHTML = 'No jurisdictions selected.';
+    return;
+  }
+  // Build table head
+  let html = '<div class="cmp-list"><table><thead><tr><th>Field</th>';
+  selectedForCompare.forEach(id => html += `<th>${escapeHtml(dataStore[id].name)} <button onclick="removeFromCompare('${id}')">remove</button></th>`);
+  html += '</tr></thead><tbody>';
+  const fields = ['supervisory_authority','law','data_transfers','fines','last_updated'];
+  const labels = {'supervisory_authority':'Supervisory Authority','law':'Law','data_transfers':'Data transfers','fines':'Fines','last_updated':'Last updated'};
+  fields.forEach(f => {
+    html += `<tr><td><strong>${labels[f]}</strong></td>`;
+    selectedForCompare.forEach(id => html += `<td>${escapeHtml(dataStore[id][f] || '')}</td>`);
+    html += `</tr>`;
   });
-</script>
+  html += '</tbody></table></div>';
+  compareArea.innerHTML = html;
+}
 
+// helper to avoid XSS in demo
+function escapeHtml(s){ return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+
+// initial message
+detailsEl.innerHTML = '<p>Click a jurisdiction marker to see summary.</p>';
+</script>
 </body>
 </html>
