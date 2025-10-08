@@ -75,7 +75,7 @@ document.getElementById('modeToggle').onclick = function() {
 };
 
 // --- Load GeoJSON + Filter Small Islands ---
-fetch('data/countries.geojson')
+fetch('countries.geojson')
   .then(r => r.json())
   .then(geo => {
     const filteredFeatures = [];
