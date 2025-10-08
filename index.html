@@ -6,14 +6,14 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin=""/>
   <style>
-    html,body { height:100%; margin:0; font-family:sans-serif; }
+    html,body { height:100%; margin:0; font-family:sans-serif; background:#fff; }
     #app { display:flex; height:100%; width:100%; }
     #map { flex:1; height:100%; }
     #panel { width:400px; border-left:1px solid #ccc; padding:10px; overflow-y:auto; }
     .jur-card { border:1px solid #ddd; border-radius:6px; padding:8px; margin-bottom:10px; background:#fafafa; }
     table { border-collapse:collapse; width:100%; }
     th,td { border:1px solid #ddd; padding:6px; font-size:13px; }
-    button { padding:5px 8px; margin-top:5px; }
+    button { padding:5px 8px; margin-top:5px; cursor:pointer; }
   </style>
 </head>
 <body>
@@ -29,7 +29,7 @@
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
 <script>
-// --- Demo data (replace with your JSON later) ---
+// --- Demo compliance data (replace later with real dataset) ---
 const complianceData = {
   "France": { authority:"CNIL", law:"GDPR + French Data Protection Act", fines:"Up to €20M or 4%", transfers:"SCCs, adequacy", note:"Strong enforcement history" },
   "Germany": { authority:"BfDI / State DPAs", law:"GDPR + BDSG", fines:"Up to €20M or 4%", transfers:"SCCs; state rules", note:"State-level variation" },
@@ -37,13 +37,14 @@ const complianceData = {
 };
 const selected = [];
 
-// --- Create map (disable both horizontal + vertical repeats) ---
+// --- Create map: limit both poles and prevent repeat ---
 const map = L.map('map', {
   minZoom: 2,
+  maxZoom: 6,
   worldCopyJump: false,
-  maxBounds: [[-60, -180], [85, 180]],  // restrict vertical + horizontal panning
+  maxBounds: [[-55, -180], [75, 180]], // crop Antarctica & Arctic
   maxBoundsViscosity: 1.0
-}).setView([20, 0], 2);
+}).setView([25, 10], 2.1); // center view for balanced continents
 
 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
   noWrap: true,
@@ -51,7 +52,7 @@ L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
   attribution: '© OpenStreetMap contributors'
 }).addTo(map);
 
-// --- Load world polygons ---
+// --- Load GeoJSON (country polygons) ---
 fetch('countries.geojson')
   .then(r => r.json())
   .then(geo => {
@@ -72,11 +73,12 @@ function onEachCountry(feature, layer){
 
 const detailsEl = document.getElementById('details');
 const compareEl = document.getElementById('compare');
+let currentHighlight = null;
 
 function countryClicked(name, layer){
-  if (window.currentHighlight) window.currentHighlight.setStyle({ fillColor:'#f8f8f8' });
+  if (currentHighlight) currentHighlight.setStyle({ fillColor:'#f8f8f8' });
   layer.setStyle({ fillColor:'#66b3ff' });
-  window.currentHighlight = layer;
+  currentHighlight = layer;
 
   const data = complianceData[name];
   if (data){
