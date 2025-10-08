@@ -39,7 +39,7 @@ const complianceData = {
   "United Kingdom": { authority:"ICO", law:"UK GDPR + DPA 2018", fines:"Up to £17.5M or 4%", transfers:"UK SCCs", note:"Post-Brexit adequacy" }
 };
 
-// --- Color sequence for comparisons ---
+// --- Colors ---
 const colorPalette = ["#9b1e66","#e1345c","#e7450f","#f7a723","#ffd900","#4f9f35","#00a191"];
 
 // --- Map setup ---
@@ -57,11 +57,11 @@ const map = L.map('map', {
   maxBoundsViscosity: 1.0
 }).setView([25, 10], 2);
 
-// --- State tracking ---
+// --- State ---
 let compareMode = false;
 let selectedCountries = [];
-let countryLayers = {}; // name -> Leaflet layer
-let colorAssignments = {}; // name -> hex color
+let countryLayers = {};
+let colorAssignments = {};
 let currentHighlight = null;
 
 // --- Toggle compare mode ---
@@ -72,7 +72,6 @@ toggleBtn.onclick = () => {
   toggleBtn.classList.toggle('active', compareMode);
 
   if (!compareMode) {
-    // Reset compare colors
     selectedCountries.forEach(name => {
       if (countryLayers[name]) countryLayers[name].setStyle(baseStyle());
     });
@@ -87,18 +86,18 @@ function baseStyle() {
   return { color:'#222', weight:1, fillColor:'#fdfdfd', fillOpacity:0.9 };
 }
 
-// --- Load GeoJSON ---
+// --- Load GeoJSON properly ---
 fetch('countries.geojson')
   .then(r => r.json())
   .then(geo => {
-    const filtered = { type: "FeatureCollection", features: [] };
-    geo.features.forEach(f => {
-      const name = f.properties.ADMIN || "";
-      if (["Antarctica","Greenland"].includes(name)) return;
-
-      const area = turf.area(f);
-      if (area > 10000000000) filtered.features.push(f);
-    });
+    const filtered = {
+      type: "FeatureCollection",
+      features: geo.features.filter(f => {
+        const name = f.properties.ADMIN || "";
+        if (name === "Antarctica") return false; // remove only Antarctica
+        return true;
+      })
+    };
 
     L.geoJSON(filtered, {
       style: baseStyle,
@@ -108,15 +107,14 @@ fetch('countries.geojson')
 
         layer.on('mouseover', () => layer.setStyle({ fillOpacity: 1 }));
         layer.on('mouseout', () => {
-          if (!isCountrySelected(name)) layer.setStyle({ fillOpacity: 0.9 });
+          if (!isCountrySelected(name) && currentHighlight !== layer) layer.setStyle({ fillOpacity: 0.9 });
         });
-
         layer.on('click', () => handleCountryClick(name));
       }
     }).addTo(map);
   });
 
-// --- Helpers ---
+// --- Click handlers ---
 function isCountrySelected(name) {
   return selectedCountries.includes(name);
 }
@@ -127,12 +125,10 @@ function handleCountryClick(name) {
 
   if (compareMode) {
     if (isCountrySelected(name)) {
-      // Deselect
       selectedCountries = selectedCountries.filter(n => n !== name);
       delete colorAssignments[name];
       layer.setStyle(baseStyle());
     } else if (selectedCountries.length < colorPalette.length) {
-      // Add with color
       const color = colorPalette[selectedCountries.length];
       selectedCountries.push(name);
       colorAssignments[name] = color;
@@ -140,7 +136,6 @@ function handleCountryClick(name) {
     }
     renderCompare();
   } else {
-    // Single select mode
     if (currentHighlight) currentHighlight.setStyle(baseStyle());
     currentHighlight = layer;
     layer.setStyle({ fillColor: colorPalette[0], fillOpacity: 1, color:'#222', weight:1 });
@@ -197,5 +192,4 @@ function renderCompare() {
 </script>
 </body>
 </html>
-
 
