@@ -2,159 +2,115 @@
 <html>
 <head>
   <meta charset="utf-8" />
-  <title>GDPR Compliance Map — Working Demo</title>
+  <title>GDPR Compliance World Map</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <!-- Leaflet CSS -->
-  <link
-    rel="stylesheet"
-    href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
-    crossorigin=""
-  />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin=""/>
   <style>
-    html, body {
-      height: 100%;
-      margin: 0;
-      font-family: system-ui, Arial, sans-serif;
-    }
-    #app {
-      display: flex;
-      height: 100%;
-      width: 100%;
-    }
-    #map {
-      flex: 1;
-      height: 100%;
-    }
-    #panel {
-      width: 400px;
-      border-left: 1px solid #ccc;
-      padding: 10px;
-      overflow-y: auto;
-    }
-    .jur-card {
-      border: 1px solid #ddd;
-      border-radius: 6px;
-      padding: 8px;
-      margin-bottom: 10px;
-      background: #fafafa;
-    }
-    button {
-      margin-top: 6px;
-      padding: 6px 10px;
-    }
-    table {
-      border-collapse: collapse;
-      width: 100%;
-    }
-    th, td {
-      border: 1px solid #ddd;
-      padding: 6px;
-      font-size: 13px;
-    }
+    html,body { height:100%; margin:0; font-family:sans-serif; }
+    #app { display:flex; height:100%; width:100%; }
+    #map { flex:1; height:100%; }
+    #panel { width:400px; border-left:1px solid #ccc; padding:10px; overflow-y:auto; }
+    .jur-card { border:1px solid #ddd; border-radius:6px; padding:8px; margin-bottom:10px; background:#fafafa; }
+    .highlighted { fill:#3388ff !important; }
+    table { border-collapse:collapse; width:100%; }
+    th,td { border:1px solid #ddd; padding:6px; font-size:13px; }
+    button { padding:5px 8px; margin-top:5px; }
   </style>
 </head>
 <body>
 <div id="app">
   <div id="map"></div>
   <div id="panel">
-    <h2>GDPR Compliance Map (Demo)</h2>
-    <div id="details">Click a marker on the map.</div>
+    <h2>GDPR Compliance Map</h2>
+    <div id="details">Click a country to view details.</div>
     <h3>Compare</h3>
-    <div id="compareArea">No jurisdictions selected.</div>
+    <div id="compare">No jurisdictions selected.</div>
   </div>
 </div>
 
-<!-- Leaflet JS -->
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
 <script>
-const catalogue = [
-  { id:'fr', name:'France', coords:[46.7,2.5] },
-  { id:'de', name:'Germany', coords:[51.1,10.4] },
-  { id:'uk', name:'United Kingdom', coords:[54.4,-2.6] }
-];
-
-const dataStore = {
-  'fr': {
-    name:'France',
-    authority:'CNIL',
-    law:'GDPR + French Data Protection Act',
-    transfers:'SCCs, adequacy applies.',
-    fines:'Up to €20M or 4% global turnover.'
-  },
-  'de': {
-    name:'Germany',
-    authority:'BfDI / State DPAs',
-    law:'GDPR + Federal Data Protection Act (BDSG).',
-    transfers:'SCCs; special employment rules.',
-    fines:'Up to €20M or 4% global turnover.'
-  },
-  'uk': {
-    name:'United Kingdom',
-    authority:'ICO',
-    law:'UK GDPR + DPA 2018',
-    transfers:'UK adequacy, SCCs.',
-    fines:'Up to £17.5M or 4% turnover.'
-  }
+// --- Data for demo (replace or fetch from /data/ files) ---
+const complianceData = {
+  "France": { authority:"CNIL", law:"GDPR + French Data Protection Act", fines:"Up to €20M or 4%", transfers:"SCCs, adequacy", note:"Strong enforcement history" },
+  "Germany": { authority:"BfDI / State DPAs", law:"GDPR + BDSG", fines:"Up to €20M or 4%", transfers:"SCCs; state rules", note:"State-level variation" },
+  "United Kingdom": { authority:"ICO", law:"UK GDPR + DPA 2018", fines:"Up to £17.5M or 4%", transfers:"UK SCCs", note:"Post-Brexit adequacy" }
 };
-
-const map = L.map('map').setView([52.5, 9.5], 5);
-L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-  attribution: '© OpenStreetMap contributors'
-}).addTo(map);
-
-catalogue.forEach(j => {
-  const marker = L.circleMarker(j.coords, {radius:8, color:'#0077ff', fillColor:'#0077ff', fillOpacity:0.8});
-  marker.addTo(map).bindTooltip(j.name);
-  marker.on('click', () => showDetails(j.id));
-});
-
-const detailsEl = document.getElementById('details');
-const compareEl = document.getElementById('compareArea');
 const selected = [];
 
-function showDetails(id) {
-  const d = dataStore[id];
-  detailsEl.innerHTML = `
-    <div class="jur-card">
-      <h3>${d.name}</h3>
-      <p><strong>Supervisory Authority:</strong> ${d.authority}</p>
-      <p><strong>Law:</strong> ${d.law}</p>
-      <p><strong>Transfers:</strong> ${d.transfers}</p>
-      <p><strong>Fines:</strong> ${d.fines}</p>
-      <button onclick="addToCompare('${id}')">Add to Compare</button>
-    </div>`;
-}
+const map = L.map('map').setView([20,0], 2);
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+  attribution:'© OpenStreetMap contributors'
+}).addTo(map);
 
-function addToCompare(id) {
-  if (!selected.includes(id)) selected.push(id);
-  renderCompare();
-}
-
-function removeFromCompare(id) {
-  const i = selected.indexOf(id);
-  if (i !== -1) selected.splice(i,1);
-  renderCompare();
-}
-
-function renderCompare() {
-  if (selected.length === 0) {
-    compareEl.textContent = 'No jurisdictions selected.';
-    return;
-  }
-  let html = '<table><thead><tr><th>Field</th>';
-  selected.forEach(id => html += `<th>${dataStore[id].name} <button onclick="removeFromCompare('${id}')">x</button></th>`);
-  html += '</tr></thead><tbody>';
-  const fields = ['authority','law','transfers','fines'];
-  const labels = {authority:'Authority',law:'Law',transfers:'Transfers',fines:'Fines'};
-  fields.forEach(f => {
-    html += `<tr><td><strong>${labels[f]}</strong></td>`;
-    selected.forEach(id => html += `<td>${dataStore[id][f]}</td>`);
-    html += '</tr>';
+// --- Load world polygons ---
+fetch('countries.geojson')
+  .then(r => r.json())
+  .then(geo => {
+    const layer = L.geoJSON(geo, {
+      style: { color:'#555', weight:1, fillColor:'#f8f8f8', fillOpacity:0.6 },
+      onEachFeature: onEachCountry
+    }).addTo(map);
   });
-  html += '</tbody></table>';
-  compareEl.innerHTML = html;
+
+function onEachCountry(feature, layer){
+  const name = feature.properties.ADMIN;
+  layer.on({
+    mouseover: e => e.target.setStyle({ fillOpacity:0.9 }),
+    mouseout: e => e.target.setStyle({ fillOpacity:0.6 }),
+    click: e => countryClicked(name, layer)
+  });
+}
+
+const detailsEl = document.getElementById('details');
+const compareEl = document.getElementById('compare');
+function countryClicked(name, layer){
+  // Highlight
+  if (window.currentHighlight) window.currentHighlight.setStyle({ fillColor:'#f8f8f8' });
+  layer.setStyle({ fillColor:'#66b3ff' });
+  window.currentHighlight = layer;
+
+  const data = complianceData[name];
+  if (data){
+    detailsEl.innerHTML = `
+      <div class="jur-card">
+        <h3>${name}</h3>
+        <p><strong>Authority:</strong> ${data.authority}</p>
+        <p><strong>Law:</strong> ${data.law}</p>
+        <p><strong>Transfers:</strong> ${data.transfers}</p>
+        <p><strong>Fines:</strong> ${data.fines}</p>
+        <p>${data.note}</p>
+        <button onclick="addToCompare('${name}')">Add to compare</button>
+      </div>`;
+  } else {
+    detailsEl.innerHTML = `<div class="jur-card"><h3>${name}</h3><p>No data yet.</p></div>`;
+  }
+}
+
+function addToCompare(name){
+  if (!selected.includes(name)) selected.push(name);
+  renderCompare();
+}
+function removeFromCompare(name){
+  const i = selected.indexOf(name);
+  if (i!==-1) selected.splice(i,1);
+  renderCompare();
+}
+function renderCompare(){
+  if (selected.length===0){ compareEl.textContent='No jurisdictions selected.'; return; }
+  let html='<table><thead><tr><th>Field</th>';
+  selected.forEach(n => html+=`<th>${n} <button onclick="removeFromCompare('${n}')">x</button></th>`);
+  html+='</tr></thead><tbody>';
+  const fields=['authority','law','transfers','fines','note'];
+  const labels={authority:'Authority',law:'Law',transfers:'Transfers',fines:'Fines',note:'Note'};
+  fields.forEach(f=>{
+    html+=`<tr><td><strong>${labels[f]}</strong></td>`;
+    selected.forEach(n=> html+=`<td>${(complianceData[n]||{})[f]||''}</td>`);
+    html+='</tr>';
+  });
+  html+='</tbody></table>';
+  compareEl.innerHTML=html;
 }
 </script>
 </body>
 </html>
-
