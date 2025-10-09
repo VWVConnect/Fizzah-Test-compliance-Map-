@@ -141,19 +141,19 @@ const complianceData = {
 const colors = ["#7fc28f","#07b0a0","#00a6c5","#ffd900","#4f9f35","#9b1e66"];
 let compareMode=false, selected={}, order=[], current=null, layerMap={};
 
-// Map setup with fixed panning and slightly more zoomed in
+// Map setup with fixed panning, slightly zoomed, and centered globally
 const map = L.map('map', {
   zoomControl:false,
   scrollWheelZoom:false,
   doubleClickZoom:false,
-  dragging:false,      // disable map movement
+  dragging:false,
   boxZoom:false,
   keyboard:false,
   tap:false,
   touchZoom:false,
   maxBounds: [[-90, -180], [90, 180]],
   maxBoundsViscosity: 1.0
-}).setView([50, 20], 2.45); // slightly more zoomed in
+}).setView([40, 20], 2.5); // slightly more zoomed in and centered
 
 // White background
 const worldBounds = [[-90, -180], [90, 180]];
