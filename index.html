@@ -6,18 +6,44 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin=""/>
   <style>
-    html, body { height: 100%; margin: 0; background: #fff; font-family: system-ui, sans-serif; }
+    html, body {
+      height: 100%; margin: 0; background: #fff;
+      font-family: 'system-ui', sans-serif;
+      color: #192543;
+    }
     #app { display: flex; height: 100%; width: 100%; }
-    #map { flex: 1; background: #fff; cursor: pointer; }
-    #panel { width: 380px; border-left: 1px solid #ccc; padding: 12px; overflow-y: auto; background: #fff; }
-    h2 { margin-top: 0; }
-    .jur-card { border: 1px solid #ddd; border-radius: 6px; padding: 8px; background: #fafafa; margin-bottom: 10px; }
-    button { padding: 8px 12px; border: none; border-radius: 6px; cursor: pointer; }
-    button.active { background: #007bff; color: #fff; }
-    .legend-item { display: flex; align-items: center; margin: 4px 0; gap: 6px; font-size: 14px; }
-    .swatch { width: 18px; height: 14px; border: 1px solid #999; border-radius: 2px; }
-    table { border-collapse: collapse; width: 100%; margin-top: 10px; }
-    th, td { border: 1px solid #ddd; padding: 6px; text-align: left; font-size: 13px; }
+    #map { flex: 1; cursor: pointer; }
+    #panel {
+      width: 380px; border-left: 1px solid #ddd; padding: 16px;
+      overflow-y: auto; background: #f9f9f9; display: flex; flex-direction: column;
+    }
+    h2, h3 { margin-top: 0; color: #192543; }
+    .jur-card {
+      border-radius: 12px; padding: 12px; margin-bottom: 12px;
+      background: #fff; box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+      transition: transform 0.2s;
+    }
+    .jur-card:hover { transform: translateY(-2px); }
+    button {
+      padding: 10px 16px; border: none; border-radius: 8px;
+      cursor: pointer; background: #07b0a0; color: #fff; font-weight: 600;
+      transition: background 0.2s;
+    }
+    button:hover { background: #00a6c5; }
+    button.active { background: #7fc28f; }
+    .button-group { display: flex; gap: 10px; margin-bottom: 12px; }
+    .legend-item {
+      display: flex; align-items: center; margin: 6px 0; gap: 8px; font-size: 14px;
+    }
+    .swatch {
+      width: 18px; height: 14px; border-radius: 3px; border: 1px solid #999;
+    }
+    table { border-collapse: collapse; width: 100%; margin-top: 12px; background:#fff; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 4px rgba(0,0,0,0.08); }
+    th, td { border: 1px solid #ddd; padding: 8px; text-align: left; font-size: 13px; }
+    th { background: #07b0a0; color: #fff; }
+    #compareArea { margin-top: 8px; }
+    /* Hide comparison area when not in compare mode */
+    .hidden { display: none; }
   </style>
 </head>
 <body>
@@ -25,12 +51,14 @@
   <div id="map"></div>
   <div id="panel">
     <h2>GDPR Compliance Map</h2>
-    <button id="toggleCompare">Compare Mode: OFF</button>
-    <button id="clearAll" style="margin-left:10px;">Clear</button>
-    <div id="details" class="jur-card" style="margin-top:10px;">Click a country to view details.</div>
+    <div class="button-group">
+      <button id="toggleCompare">Compare Mode: OFF</button>
+      <button id="clearAll">Clear</button>
+    </div>
+    <div id="details" class="jur-card">Click a country to view details.</div>
     <div id="legend"></div>
-    <h3>Comparison</h3>
-    <div id="compareArea">No jurisdictions selected.</div>
+    <h3 class="hidden" id="compareTitle">Comparison</h3>
+    <div id="compareArea" class="hidden">No jurisdictions selected.</div>
   </div>
 </div>
 
@@ -41,49 +69,28 @@ const complianceData = {
   "Germany": { authority:"BfDI / State DPAs", law:"GDPR + BDSG", fines:"Up to €20M or 4%", transfers:"SCCs; state rules", note:"State-level variation" },
   "United Kingdom": { authority:"ICO", law:"UK GDPR + DPA 2018", fines:"Up to £17.5M or 4%", transfers:"UK SCCs", note:"Post-Brexit adequacy" }
 };
-
-const colors = ["#9b1e66","#e1345c","#e7450f","#f7a723","#ffd900","#4f9f35","#00a191"];
+const colors = ["#7fc28f","#07b0a0","#00a6c5","#ffd900","#4f9f35","#9b1e66"];
 let compareMode = false;
 let selected = {};
 let order = [];
 let current = null;
 let layerMap = {};
 
-const map = L.map('map', {
-  zoomControl:false,
-  scrollWheelZoom:false,
-  doubleClickZoom:false,
-  dragging:true,
-  maxBounds:[[-40,-180],[75,180]],
-  maxBoundsViscosity:1.0
-}).setView([25,10],2);
-
-function baseStyle(){ return { color:'#222', weight:1, fillColor:'#fdfdfd', fillOpacity:1, className:'country' }; }
+const map = L.map('map', { zoomControl:false, scrollWheelZoom:false, doubleClickZoom:false, dragging:true }).setView([25,10],2);
+function baseStyle(){ return { color:'#222', weight:1, fillColor:'#fdfdfd', fillOpacity:1 }; }
 function setColor(layer,color){ layer.setStyle({ fillColor:color, fillOpacity:1 }); layer.bringToFront(); }
 function resetColor(layer){ layer.setStyle(baseStyle()); }
 
 fetch('countries.geojson')
   .then(r=>r.json())
   .then(data=>{
-    // filter out Antarctica & tiny islands
     data.features = data.features.filter(f=>{
       const props = f.properties || {};
       const name = props.ADMIN || props.NAME || props.name_long || props.name || "Unknown";
-      if (name === "Antarctica") return false;
-      if (f.bbox){
-        const w = Math.abs(f.bbox[2]-f.bbox[0]);
-        const h = Math.abs(f.bbox[3]-f.bbox[1]);
-        const area = w*h;
-        if (area < 5) return false; // stricter filter removes most islands
-      }
-      // remove known small island states
-      const exclude = [
-        "Tuvalu","Nauru","Palau","Marshall Islands","Micronesia",
-        "Seychelles","Maldives","Saint Kitts and Nevis","Saint Vincent and the Grenadines",
-        "Saint Lucia","Dominica","Antigua and Barbuda","Samoa","Tonga",
-        "Kiribati","Comoros","Vanuatu","Cape Verde","Barbados","Grenada"
-      ];
-      if (exclude.includes(name)) return false;
+      if(name==="Antarctica") return false;
+      if(f.bbox){ const w=Math.abs(f.bbox[2]-f.bbox[0]); const h=Math.abs(f.bbox[3]-f.bbox[1]); if(w*h<5) return false; }
+      const exclude = ["Tuvalu","Nauru","Palau","Marshall Islands","Micronesia","Seychelles","Maldives","Saint Kitts and Nevis","Saint Vincent and the Grenadines","Saint Lucia","Dominica","Antigua and Barbuda","Samoa","Tonga","Kiribati","Comoros","Vanuatu","Cape Verde","Barbados","Grenada"];
+      if(exclude.includes(name)) return false;
       return true;
     });
 
@@ -95,44 +102,42 @@ fetch('countries.geojson')
         layerMap[name]=layer;
         layer.on('click',()=>handleClick(name));
         layer.on('mouseover',()=>layer.setStyle({ fillOpacity:0.9 }));
-        layer.on('mouseout',()=>{
-          if (!selected[name] && layer!==current) resetColor(layer);
-        });
+        layer.on('mouseout',()=>{ if(!selected[name] && layer!==current) resetColor(layer); });
       }
     }).addTo(map);
-  })
-  .catch(err=>console.error("GeoJSON load error:", err));
+  });
 
 document.getElementById('toggleCompare').onclick=()=>{
   compareMode=!compareMode;
   const btn=document.getElementById('toggleCompare');
   btn.textContent='Compare Mode: '+(compareMode?'ON':'OFF');
   btn.classList.toggle('active',compareMode);
-  if(!compareMode){ clearAll(); }
+  document.getElementById('compareArea').classList.toggle('hidden',!compareMode);
+  document.getElementById('compareTitle').classList.toggle('hidden',!compareMode);
+  if(!compareMode) clearAll();
 };
 document.getElementById('clearAll').onclick=clearAll;
 
 function handleClick(name){
   const layer=layerMap[name];
-  if(!layer)return;
-
+  if(!layer) return;
   if(compareMode){
     if(selected[name]){
       delete selected[name];
       order=order.filter(n=>n!==name);
       resetColor(layer);
-    }else{
+    } else {
       const used=new Set(Object.values(selected));
       const color=colors.find(c=>!used.has(c));
-      if(!color)return alert('Max comparisons reached.');
+      if(!color) return alert('Max comparisons reached.');
       selected[name]=color;
       order.push(name);
       setColor(layer,color);
     }
     updateLegend();
     renderCompare();
-  }else{
-    if(current && current!==layer)resetColor(current);
+  } else {
+    if(current && current!==layer) resetColor(current);
     current=layer;
     setColor(layer,colors[0]);
     showDetails(name);
@@ -144,15 +149,14 @@ function showDetails(name){
   const el=document.getElementById('details');
   if(!d){ el.innerHTML=`<div class="jur-card"><h3>${name}</h3><p>No data yet.</p></div>`; }
   else{
-    el.innerHTML=`
-      <div class="jur-card">
-        <h3>${name}</h3>
-        <p><b>Authority:</b> ${d.authority}</p>
-        <p><b>Law:</b> ${d.law}</p>
-        <p><b>Transfers:</b> ${d.transfers}</p>
-        <p><b>Fines:</b> ${d.fines}</p>
-        <p>${d.note||''}</p>
-      </div>`;
+    el.innerHTML=`<div class="jur-card">
+      <h3>${name}</h3>
+      <p><b>Authority:</b> ${d.authority}</p>
+      <p><b>Law:</b> ${d.law}</p>
+      <p><b>Transfers:</b> ${d.transfers}</p>
+      <p><b>Fines:</b> ${d.fines}</p>
+      <p>${d.note||''}</p>
+    </div>`;
   }
 }
 
@@ -163,7 +167,7 @@ function updateLegend(){
     const color=selected[n];
     el.innerHTML+=`<div class="legend-item"><div class="swatch" style="background:${color}"></div>${n}</div>`;
   });
-  if(order.length===0)el.innerHTML='<div style="color:#666;">No jurisdictions selected.</div>';
+  if(order.length===0) el.innerHTML='<div style="color:#666;">No jurisdictions selected.</div>';
 }
 
 function renderCompare(){
@@ -176,10 +180,7 @@ function renderCompare(){
   html+='</tr></thead><tbody>';
   fields.forEach(f=>{
     html+=`<tr><td><b>${labels[f]}</b></td>`;
-    order.forEach(n=>{
-      const v=(complianceData[n]&&complianceData[n][f])||'';
-      html+=`<td>${v}</td>`;
-    });
+    order.forEach(n=>{ const v=(complianceData[n]&&complianceData[n][f])||''; html+=`<td>${v}</td>`; });
     html+='</tr>';
   });
   html+='</tbody></table>';
@@ -188,8 +189,8 @@ function renderCompare(){
 
 function clearAll(){
   Object.keys(selected).forEach(n=>resetColor(layerMap[n]));
-  selected={};order=[];
-  if(current){resetColor(current);current=null;}
+  selected={}; order=[];
+  if(current){ resetColor(current); current=null; }
   updateLegend();
   renderCompare();
   document.getElementById('details').textContent='Click a country to view details.';
