@@ -221,18 +221,27 @@ function updateLegend(){
 function renderCompare(){
   const el=document.getElementById('compareArea');
   if(order.length===0){ el.innerHTML=''; return; }
+
   const fields=['authority','law','transfers','fines','note'];
   const labels={authority:'Authority',law:'Law',transfers:'Transfers',fines:'Fines',note:'Note'};
-  let html='<table><thead><tr><th>Field</th>';
-  order.forEach(n=>html+=`<th style="background:${selected[n]}; color:#fff">${n}</th>`); // country headers colored
-  html+='</tr></thead><tbody>';
-  fields.forEach(f=>{
-    html+=`<tr><td><b>${labels[f]}</b></td>`;
-    order.forEach(n=>{ const v=(complianceData[n]&&complianceData[n][f])||''; html+=`<td>${v}</td>`; });
-    html+='</tr>';
+
+  // Start table
+  let html = '<table><thead><tr><th>Country</th>';
+  fields.forEach(f => html += `<th>${labels[f]}</th>`);
+  html += '</tr></thead><tbody>';
+
+  order.forEach(country => {
+    const color = selected[country];
+    html += `<tr><td style="background:${color}; color:#fff; font-weight:bold">${country}</td>`;
+    fields.forEach(f => {
+      const value = complianceData[country] && complianceData[country][f] ? complianceData[country][f] : '';
+      html += `<td>${value}</td>`;
+    });
+    html += '</tr>';
   });
-  html+='</tbody></table>';
-  el.innerHTML=html;
+
+  html += '</tbody></table>';
+  el.innerHTML = html;
 }
 
 function clearAll(){
@@ -246,5 +255,3 @@ function clearAll(){
 </script>
 </body>
 </html>
-
-
