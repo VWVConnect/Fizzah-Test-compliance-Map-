@@ -61,14 +61,19 @@ const complianceData = {
   "United Kingdom": { authority:"ICO", law:"UK GDPR + DPA 2018", fines:"Up to £17.5M or 4%", transfers:"UK SCCs", note:"Post-Brexit adequacy" }
 };
 const colors = ["#7fc28f","#07b0a0","#00a6c5","#ffd900","#4f9f35","#9b1e66"];
-let compareMode=false, selected={}, order=[], current=null, layerMap={};
-const map = L.map('map',{zoomControl:false, scrollWheelZoom:false, doubleClickZoom:false, dragging:false, boxZoom:false, keyboard:false, tap:false, touchZoom:false, maxBounds:[[ -90,-180],[90,180]], maxBoundsViscosity:1.0}).setView([50,20],2.45);
+let compareMode=false, selected={}, order=[], current=null, layerMap={}, hoverLayer=null;
+
+const map = L.map('map',{
+  zoomControl:false, scrollWheelZoom:false, doubleClickZoom:false, dragging:false, boxZoom:false, keyboard:false, tap:false, touchZoom:false,
+  maxBounds:[[ -90,-180],[90,180]], maxBoundsViscosity:1.0
+}).setView([50,20],2.45);
+
 L.rectangle([[-90,-180],[90,180]],{color:'#ffffff',weight:0,fillOpacity:1}).addTo(map);
 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{noWrap:true}).addTo(map);
 
-function baseStyle(){return {color:'#222', weight:1, fillColor:'#fdfdfd', fillOpacity:1};}
-function setColor(layer,color){layer.setStyle({fillColor:color, fillOpacity:1}); layer.bringToFront();}
-function resetColor(layer){layer.setStyle(baseStyle());}
+function baseStyle(){ return {color:'#222', weight:1, fillColor:'#fdfdfd', fillOpacity:1}; }
+function setColor(layer,color){ layer.setStyle({fillColor:color, fillOpacity:1}); layer.bringToFront(); }
+function resetColor(layer){ layer.setStyle(baseStyle()); }
 
 // Populate dropdown and load countries
 const jurisdictionSelect = document.getElementById('jurisdictionSelect');
@@ -77,34 +82,83 @@ fetch('countries.geojson')
   .then(r=>r.json())
   .then(data=>{
     data.features = data.features.filter(f=>{ const name=f.properties.ADMIN||f.properties.NAME||f.properties.name_long||f.properties.name||"Unknown"; if(name==="Antarctica") return false; return true; });
-    data.features.forEach(f=>{ const name=f.properties.ADMIN||f.properties.NAME||f.properties.name_long||f.properties.name||"Unknown"; const option=document.createElement('option'); option.value=name; option.textContent=name; jurisdictionSelect.appendChild(option); });
-    choicesInstance = new Choices(jurisdictionSelect,{searchEnabled:true,removeItemButton:true,placeholder:true});
-    L.geoJSON(data,{style:baseStyle,onEachFeature:(feature,layer)=>{ const name=feature.properties.ADMIN||feature.properties.NAME||feature.properties.name_long||feature.properties.name||"Unknown"; layerMap[name]=layer; layer.on('click',()=>handleClick(name)); layer.on('mouseover',()=>layer.setStyle({fillOpacity:0.9})); layer.on('mouseout',()=>{if(!selected[name]&&layer!==current)resetColor(layer);}); }}).addTo(map);
-});
+    data.features.forEach(f=>{
+      const name=f.properties.ADMIN||f.properties.NAME||f.properties.name_long||f.properties.name||"Unknown";
+      const option=document.createElement('option'); option.value=name; option.textContent=name; jurisdictionSelect.appendChild(option);
+    });
+    choicesInstance = new Choices(jurisdictionSelect,{searchEnabled:true,removeItemButton:false,placeholder:true});
+
+    L.geoJSON(data,{
+      style:baseStyle,
+      onEachFeature:(feature,layer)=>{
+        const name=feature.properties.ADMIN||feature.properties.NAME||feature.properties.name_long||feature.properties.name||"Unknown";
+        layerMap[name]=layer;
+
+        layer.on('click',()=>handleClick(name));
+        layer.on('mouseover',()=>{ if(layer!==hoverLayer) layer.setStyle({fillOpacity:0.9}); });
+        layer.on('mouseout',()=>{ if(layer!==hoverLayer) resetColor(layer); });
+      }
+    }).addTo(map);
+  });
 
 // Dropdown selection handling
-jurisdictionSelect.addEventListener('change', function(e){
-  const name=this.value;
+jurisdictionSelect.addEventListener('change', function(){
+  const name = this.value;
   if(!name || !layerMap[name]) return;
   handleClick(name);
-  const layer=layerMap[name];
-  layer.setStyle({fillOpacity:0.9});
+
+  // Highlight selected country
+  if(hoverLayer && hoverLayer!==current) resetColor(hoverLayer);
+  hoverLayer = layerMap[name];
+  hoverLayer.setStyle({fillOpacity:0.9});
 });
 
-document.getElementById('toggleCompare').onclick=()=>{compareMode=!compareMode;const btn=document.getElementById('toggleCompare');btn.textContent='Compare Mode: '+(compareMode?'ON':'OFF');btn.classList.toggle('active',compareMode);document.getElementById('compareArea').classList.toggle('hidden',!compareMode);document.getElementById('compareTitle').classList.toggle('hidden',!compareMode);if(compareMode&&current){const name=Object.keys(layerMap).find(n=>layerMap[n]===current);if(name&&!selected[name]){const color=colors.find(c=>!Object.values(selected).includes(c))||colors[0];selected[name]=color;order.push(name);setColor(current,color);}document.getElementById('details').classList.add('hidden');updateLegend();renderCompare();}else{document.getElementById('details').classList.remove('hidden');}if(!compareMode) clearAll();};
+// Toggle compare mode
+document.getElementById('toggleCompare').onclick=()=>{
+  compareMode=!compareMode;
+  const btn=document.getElementById('toggleCompare');
+  btn.textContent='Compare Mode: '+(compareMode?'ON':'OFF');
+  btn.classList.toggle('active',compareMode);
+  document.getElementById('compareArea').classList.toggle('hidden',!compareMode);
+  document.getElementById('compareTitle').classList.toggle('hidden',!compareMode);
+
+  if(compareMode && current){
+    const name=Object.keys(layerMap).find(n=>layerMap[n]===current);
+    if(name && !selected[name]){
+      const color=colors.find(c=>!Object.values(selected).includes(c))||colors[0];
+      selected[name]=color;
+      order.push(name);
+      setColor(current,color);
+    }
+    document.getElementById('details').classList.add('hidden');
+    updateLegend(); renderCompare();
+  } else {
+    document.getElementById('details').classList.remove('hidden');
+  }
+
+  if(!compareMode) clearAll();
+};
 document.getElementById('clearAll').onclick=clearAll;
 
+// Handle country click
 function handleClick(name){
   const layer=layerMap[name]; if(!layer) return;
+
   if(compareMode){
-    if(selected[name]){ delete selected[name]; order=order.filter(n=>n!==name); resetColor(layer); }
+    if(selected[name]){ delete selected[name]; order=order.filter(n=>n!==name); resetColor(layer);}
     else{ const used=new Set(Object.values(selected)); const color=colors.find(c=>!used.has(c))||colors[0]; selected[name]=color; order.push(name); setColor(layer,color);}
     document.getElementById('details').classList.add('hidden'); updateLegend(); renderCompare();
   } else {
-    if(current&&current!==layer) resetColor(current); current=layer; setColor(layer,colors[0]); document.getElementById('details').classList.remove('hidden'); showDetails(name);
+    if(current && current!==layer) resetColor(current); current=layer; setColor(layer,colors[0]); document.getElementById('details').classList.remove('hidden'); showDetails(name);
   }
+
   // Sync dropdown selection
   if(choicesInstance){ choicesInstance.setChoiceByValue(name); }
+
+  // Highlight on map
+  if(hoverLayer && hoverLayer!==current) resetColor(hoverLayer);
+  hoverLayer = layer;
+  hoverLayer.setStyle({fillOpacity:0.9});
 }
 
 function showDetails(name){
@@ -128,7 +182,7 @@ function renderCompare(){
   html+='</tbody></table>'; el.innerHTML=html;
 }
 
-function clearAll(){ Object.keys(selected).forEach(n=>resetColor(layerMap[n])); selected={}; order=[]; if(current){ resetColor(current); current=null;} updateLegend(); renderCompare(); document.getElementById('details').textContent='Click a country to view details.'; document.getElementById('details').classList.remove('hidden'); if(choicesInstance) choicesInstance.removeActiveItems(); }
+function clearAll(){ Object.keys(selected).forEach(n=>resetColor(layerMap[n])); selected={}; order=[]; if(current){ resetColor(current); current=null;} updateLegend(); renderCompare(); document.getElementById('details').textContent='Click a country to view details.'; document.getElementById('details').classList.remove('hidden'); if(choicesInstance) choicesInstance.removeActiveItems(); if(hoverLayer) { resetColor(hoverLayer); hoverLayer=null; } }
 </script>
 </body>
 </html>
