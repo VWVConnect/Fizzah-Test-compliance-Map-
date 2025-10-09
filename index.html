@@ -5,116 +5,34 @@
   <title>GDPR Compliance Map</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin=""/>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/choices.js/public/assets/styles/choices.min.css"/>
   <style>
-    html, body {
-      height: 100%; margin: 0; background: #fff;
-      font-family: 'system-ui', sans-serif;
-      color: #192543;
-    }
-
-    #app {
-      display: flex;
-      height: 100%;
-      width: 100%;
-      border: 4px solid #192543;
-      box-sizing: border-box;
-    }
-
-    /* Map */
-    #map { 
-      flex: 1.5; 
-      cursor: pointer; 
-      background: #ffffff !important;
-    }
-
-    /* Panel */
-    #panel {
-      width: 480px;
-      min-width: 420px;
-      background: #f5f7f9;
-      display: flex;
-      flex-direction: column;
-      padding: 20px;
-      box-sizing: border-box;
-      position: relative;
-      z-index: 10;
-    }
-
+    html, body { height: 100%; margin: 0; background: #fff; font-family: 'system-ui', sans-serif; color: #192543; }
+    #app { display: flex; height: 100%; width: 100%; border: 4px solid #192543; box-sizing: border-box; }
+    #map { flex: 1.5; cursor: pointer; background: #ffffff !important; }
+    #panel { width: 480px; min-width: 420px; background: #f5f7f9; display: flex; flex-direction: column; padding: 20px; box-sizing: border-box; position: relative; z-index: 10; }
     h2, h3 { margin-top: 0; color: #192543; text-align: center; }
-
-    /* Buttons */
-    .button-group {
-      display: flex;
-      gap: 10px;
-      margin-bottom: 16px;
-      justify-content: center;
-    }
-    button {
-      padding: 10px 18px;
-      border: none;
-      border-radius: 8px;
-      cursor: pointer;
-      background: #07b0a0;
-      color: #fff;
-      font-weight: 600;
-      transition: background 0.2s;
-    }
+    .button-group { display: flex; gap: 10px; margin-bottom: 16px; justify-content: center; }
+    button { padding: 10px 18px; border: none; border-radius: 8px; cursor: pointer; background: #07b0a0; color: #fff; font-weight: 600; transition: background 0.2s; }
     button:hover { background: #00a6c5; }
     button.active { background: #7fc28f; }
-
-    /* Info card */
-    #details {
-      flex: none;
-      margin-bottom: 16px;
-      padding: 16px;
-      border-radius: 14px;
-      background: #fff;
-      box-shadow: 0 6px 18px rgba(0,0,0,0.08);
-      transition: transform 0.2s ease, box-shadow 0.2s ease;
-    }
+    #details { flex: none; margin-bottom: 16px; padding: 16px; border-radius: 14px; background: #fff; box-shadow: 0 6px 18px rgba(0,0,0,0.08); transition: transform 0.2s ease, box-shadow 0.2s ease; }
     #details:hover { transform: translateY(-2px); box-shadow: 0 10px 22px rgba(0,0,0,0.12); }
     #details h3 { margin-bottom: 10px; font-size: 18px; }
     #details p { margin: 4px 0; font-size: 14px; }
     #details .note { font-size: 13px; color: #555; margin-top: 6px; }
-
-    /* Legend */
-    .legend-item {
-      display: flex;
-      align-items: center;
-      margin: 6px 0;
-      gap: 8px;
-      font-size: 14px;
-    }
+    .legend-item { display: flex; align-items: center; margin: 6px 0; gap: 8px; font-size: 14px; }
     .swatch { width: 18px; height: 14px; border-radius: 3px; border: 1px solid #999; }
-
-    /* Comparison table */
-    #compareArea {
-      margin-top: 10px;
-      flex: none;
-      display: flex;
-      justify-content: center;
-    }
-    #compareArea table {
-      border-collapse: separate;
-      border-spacing: 0;
-      border-radius: 12px;
-      overflow: hidden;
-      width: 100%;
-      max-width: 440px;
-      box-shadow: 0 6px 16px rgba(0,0,0,0.08);
-    }
-    #compareArea th, #compareArea td {
-      padding: 12px 10px;
-      text-align: left;
-      font-size: 13px;
-    }
+    #compareArea { margin-top: 10px; flex: none; display: flex; justify-content: center; }
+    #compareArea table { border-collapse: separate; border-spacing: 0; border-radius: 12px; overflow: hidden; width: 100%; max-width: 440px; box-shadow: 0 6px 16px rgba(0,0,0,0.08); }
+    #compareArea th, #compareArea td { padding: 12px 10px; text-align: left; font-size: 13px; }
     #compareArea th.blank { background: #192543; color: #fff; }
     #compareArea th.field { background: #fff; color: #192543; font-weight: 600; }
     #compareArea td.country { font-weight: bold; color: #fff; text-align: center; }
     #compareArea tbody tr:nth-child(even) td:not(.country) { background-color: #f9f9f9; }
     #compareArea tbody tr:hover td:not(.country) { background-color: #e6f7f5; }
-
     .hidden { display: none; }
+    #jurisdictionSelect { margin-bottom: 12px; border-radius: 8px; padding: 8px; border: 1px solid #ccc; width: 100%; }
   </style>
 </head>
 <body>
@@ -122,6 +40,7 @@
   <div id="map"></div>
   <div id="panel">
     <h2>GDPR Compliance Map</h2>
+    <select id="jurisdictionSelect"></select>
     <div class="button-group">
       <button id="toggleCompare">Compare Mode: OFF</button>
       <button id="clearAll">Clear</button>
@@ -134,6 +53,7 @@
 </div>
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin></script>
+<script src="https://cdn.jsdelivr.net/npm/choices.js/public/assets/scripts/choices.min.js"></script>
 <script>
 const complianceData = {
   "France": { authority:"CNIL", law:"GDPR + French Data Protection Act", fines:"Up to €20M or 4%", transfers:"SCCs, adequacy", note:"Strong enforcement history" },
@@ -142,180 +62,73 @@ const complianceData = {
 };
 const colors = ["#7fc28f","#07b0a0","#00a6c5","#ffd900","#4f9f35","#9b1e66"];
 let compareMode=false, selected={}, order=[], current=null, layerMap={};
+const map = L.map('map',{zoomControl:false, scrollWheelZoom:false, doubleClickZoom:false, dragging:false, boxZoom:false, keyboard:false, tap:false, touchZoom:false, maxBounds:[[ -90,-180],[90,180]], maxBoundsViscosity:1.0}).setView([50,20],2.45);
+L.rectangle([[-90,-180],[90,180]],{color:'#ffffff',weight:0,fillOpacity:1}).addTo(map);
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{noWrap:true}).addTo(map);
 
-// Map setup (non-draggable)
-const map = L.map('map', {
-  zoomControl: false,
-  scrollWheelZoom: false,
-  doubleClickZoom: false,
-  dragging: false,      // disables dragging
-  boxZoom: false,
-  keyboard: false,
-  tap: false,
-  touchZoom: false,
-  maxBounds: [[-90, -180], [90, 180]],
-  maxBoundsViscosity: 1.0
-}).setView([50, 20], 2.45);
+function baseStyle(){return {color:'#222', weight:1, fillColor:'#fdfdfd', fillOpacity:1};}
+function setColor(layer,color){layer.setStyle({fillColor:color, fillOpacity:1}); layer.bringToFront();}
+function resetColor(layer){layer.setStyle(baseStyle());}
 
-// White background rectangle
-const worldBounds = [[-90, -180], [90, 180]];
-L.rectangle(worldBounds, {color:'#ffffff', weight:0, fillOpacity:1}).addTo(map);
-
-// Tiles
-L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { noWrap: true }).addTo(map);
-
-// Country layer styles
-function baseStyle(){ return { color:'#222', weight:1, fillColor:'#fdfdfd', fillOpacity:1 }; }
-function setColor(layer,color){ layer.setStyle({ fillColor:color, fillOpacity:1 }); layer.bringToFront(); }
-function resetColor(layer){ layer.setStyle(baseStyle()); }
-
-// Load countries
+// Populate dropdown and load countries
+const jurisdictionSelect = document.getElementById('jurisdictionSelect');
+let choicesInstance;
 fetch('countries.geojson')
   .then(r=>r.json())
   .then(data=>{
-    data.features = data.features.filter(f=>{
-      const props = f.properties || {};
-      const name = props.ADMIN || props.NAME || props.name_long || props.name || "Unknown";
-      if(name==="Antarctica") return false;
-      if(f.bbox){ const w=Math.abs(f.bbox[2]-f.bbox[0]); const h=Math.abs(f.bbox[3]-f.bbox[1]); if(w*h<5) return false; }
-      const exclude = ["Tuvalu","Nauru","Palau","Marshall Islands","Micronesia","Seychelles","Maldives","Saint Kitts and Nevis","Saint Vincent and the Grenadines","Saint Lucia","Dominica","Antigua and Barbuda","Samoa","Tonga","Kiribati","Comoros","Vanuatu","Cape Verde","Barbados","Grenada"];
-      if(exclude.includes(name)) return false;
-      return true;
-    });
-    L.geoJSON(data,{
-      style:baseStyle,
-      onEachFeature:(feature,layer)=>{
-        const props = feature.properties || {};
-        const name = props.ADMIN || props.NAME || props.name_long || props.name || "Unknown";
-        layerMap[name]=layer;
-        layer.on('click',()=>handleClick(name));
-        layer.on('mouseover',()=>layer.setStyle({ fillOpacity:0.9 }));
-        layer.on('mouseout',()=>{ if(!selected[name] && layer!==current) resetColor(layer); });
-      }
-    }).addTo(map);
-  });
+    data.features = data.features.filter(f=>{ const name=f.properties.ADMIN||f.properties.NAME||f.properties.name_long||f.properties.name||"Unknown"; if(name==="Antarctica") return false; return true; });
+    data.features.forEach(f=>{ const name=f.properties.ADMIN||f.properties.NAME||f.properties.name_long||f.properties.name||"Unknown"; const option=document.createElement('option'); option.value=name; option.textContent=name; jurisdictionSelect.appendChild(option); });
+    choicesInstance = new Choices(jurisdictionSelect,{searchEnabled:true,removeItemButton:true,placeholder:true});
+    L.geoJSON(data,{style:baseStyle,onEachFeature:(feature,layer)=>{ const name=feature.properties.ADMIN||feature.properties.NAME||feature.properties.name_long||feature.properties.name||"Unknown"; layerMap[name]=layer; layer.on('click',()=>handleClick(name)); layer.on('mouseover',()=>layer.setStyle({fillOpacity:0.9})); layer.on('mouseout',()=>{if(!selected[name]&&layer!==current)resetColor(layer);}); }}).addTo(map);
+});
 
-// Toggle compare mode
-document.getElementById('toggleCompare').onclick=()=> {
-  compareMode=!compareMode;
-  const btn=document.getElementById('toggleCompare');
-  btn.textContent='Compare Mode: '+(compareMode?'ON':'OFF');
-  btn.classList.toggle('active',compareMode);
-  document.getElementById('compareArea').classList.toggle('hidden',!compareMode);
-  document.getElementById('compareTitle').classList.toggle('hidden',!compareMode);
+// Dropdown selection handling
+jurisdictionSelect.addEventListener('change', function(e){
+  const name=this.value;
+  if(!name || !layerMap[name]) return;
+  handleClick(name);
+  const layer=layerMap[name];
+  layer.setStyle({fillOpacity:0.9});
+});
 
-  if(compareMode && current){
-    const name = Object.keys(layerMap).find(n => layerMap[n]===current);
-    if(name && !selected[name]){
-      const color = colors.find(c => !Object.values(selected).includes(c)) || colors[0];
-      selected[name] = color;
-      order.push(name);
-      setColor(current,color);
-    }
-    document.getElementById('details').classList.add('hidden');
-    updateLegend();
-    renderCompare();
-  } else {
-    document.getElementById('details').classList.remove('hidden');
-  }
-
-  if(!compareMode) clearAll();
-};
-
-// Clear all
+document.getElementById('toggleCompare').onclick=()=>{compareMode=!compareMode;const btn=document.getElementById('toggleCompare');btn.textContent='Compare Mode: '+(compareMode?'ON':'OFF');btn.classList.toggle('active',compareMode);document.getElementById('compareArea').classList.toggle('hidden',!compareMode);document.getElementById('compareTitle').classList.toggle('hidden',!compareMode);if(compareMode&&current){const name=Object.keys(layerMap).find(n=>layerMap[n]===current);if(name&&!selected[name]){const color=colors.find(c=>!Object.values(selected).includes(c))||colors[0];selected[name]=color;order.push(name);setColor(current,color);}document.getElementById('details').classList.add('hidden');updateLegend();renderCompare();}else{document.getElementById('details').classList.remove('hidden');}if(!compareMode) clearAll();};
 document.getElementById('clearAll').onclick=clearAll;
 
-// Handle country click
 function handleClick(name){
-  const layer=layerMap[name];
-  if(!layer) return;
-
+  const layer=layerMap[name]; if(!layer) return;
   if(compareMode){
-    if(selected[name]){
-      delete selected[name];
-      order=order.filter(n=>n!==name);
-      resetColor(layer);
-    } else {
-      const used=new Set(Object.values(selected));
-      const color=colors.find(c=>!used.has(c)) || colors[0];
-      selected[name]=color;
-      order.push(name);
-      setColor(layer,color);
-    }
-    document.getElementById('details').classList.add('hidden');
-    updateLegend();
-    renderCompare();
+    if(selected[name]){ delete selected[name]; order=order.filter(n=>n!==name); resetColor(layer); }
+    else{ const used=new Set(Object.values(selected)); const color=colors.find(c=>!used.has(c))||colors[0]; selected[name]=color; order.push(name); setColor(layer,color);}
+    document.getElementById('details').classList.add('hidden'); updateLegend(); renderCompare();
   } else {
-    if(current && current!==layer) resetColor(current);
-    current=layer;
-    setColor(layer,colors[0]);
-    document.getElementById('details').classList.remove('hidden');
-    showDetails(name);
+    if(current&&current!==layer) resetColor(current); current=layer; setColor(layer,colors[0]); document.getElementById('details').classList.remove('hidden'); showDetails(name);
   }
+  // Sync dropdown selection
+  if(choicesInstance){ choicesInstance.setChoiceByValue(name); }
 }
 
-// Show details
 function showDetails(name){
-  const d=complianceData[name];
-  const el=document.getElementById('details');
-  if(!d){ el.innerHTML=`<h3>${name}</h3><p>No data yet.</p>`; }
-  else{
-    el.innerHTML=`<h3>${name}</h3>
-      <p><strong>Authority:</strong> ${d.authority}</p>
-      <p><strong>Law:</strong> ${d.law}</p>
-      <p><strong>Transfers:</strong> ${d.transfers}</p>
-      <p><strong>Fines:</strong> ${d.fines}</p>
-      <p class="note">${d.note||''}</p>`;
-  }
+  const d=complianceData[name]; const el=document.getElementById('details');
+  if(!d){ el.innerHTML=`<h3>${name}</h3><p>No data yet.</p>`; } 
+  else{ el.innerHTML=`<h3>${name}</h3>
+    <p><strong>Authority:</strong> ${d.authority}</p>
+    <p><strong>Law:</strong> ${d.law}</p>
+    <p><strong>Transfers:</strong> ${d.transfers}</p>
+    <p><strong>Fines:</strong> ${d.fines}</p>
+    <p class="note">${d.note||''}</p>`;}
 }
 
-// Update legend
-function updateLegend(){
-  const el=document.getElementById('legend');
-  el.innerHTML='';
-  order.forEach(n=>{
-    const color=selected[n];
-    el.innerHTML+=`<div class="legend-item"><div class="swatch" style="background:${color}"></div>${n}</div>`;
-  });
-}
+function updateLegend(){ const el=document.getElementById('legend'); el.innerHTML=''; order.forEach(n=>{ const color=selected[n]; el.innerHTML+=`<div class="legend-item"><div class="swatch" style="background:${color}"></div>${n}</div>`; }); }
 
-// Render comparison table
 function renderCompare(){
-  const el=document.getElementById('compareArea');
-  if(order.length===0){ el.innerHTML=''; return; }
-
-  const fields=['authority','law','transfers','fines','note'];
-  const labels={authority:'Authority',law:'Law',transfers:'Transfers',fines:'Fines',note:'Notes'};
-
-  let html = '<table><thead><tr>';
-  html += '<th class="blank"></th>';
-  fields.forEach(f => html += `<th class="field">${labels[f]}</th>`);
-  html += '</tr></thead><tbody>';
-
-  order.forEach(country => {
-    const color = selected[country];
-    html += `<tr><td class="country" style="background:${color}">${country}</td>`;
-    fields.forEach(f => {
-      const value = complianceData[country] && complianceData[country][f] ? complianceData[country][f] : '';
-      html += `<td>${value}</td>`;
-    });
-    html += '</tr>';
-  });
-
-  html += '</tbody></table>';
-  el.innerHTML = html;
+  const el=document.getElementById('compareArea'); if(order.length===0){ el.innerHTML=''; return; }
+  const fields=['authority','law','transfers','fines','note']; const labels={authority:'Authority',law:'Law',transfers:'Transfers',fines:'Fines',note:'Notes'};
+  let html='<table><thead><tr><th class="blank"></th>'; fields.forEach(f=>html+=`<th class="field">${labels[f]}</th>`); html+='</tr></thead><tbody>';
+  order.forEach(country=>{ const color=selected[country]; html+=`<tr><td class="country" style="background:${color}">${country}</td>`; fields.forEach(f=>{ const value=complianceData[country]&&complianceData[country][f]?complianceData[country][f]:''; html+=`<td>${value}</td>`; }); html+='</tr>'; });
+  html+='</tbody></table>'; el.innerHTML=html;
 }
 
-// Clear all
-function clearAll(){
-  Object.keys(selected).forEach(n=>resetColor(layerMap[n]));
-  selected={}; order=[];
-  if(current){ resetColor(current); current=null; }
-  updateLegend();
-  renderCompare();
-  document.getElementById('details').textContent='Click a country to view details.';
-  document.getElementById('details').classList.remove('hidden');
-}
+function clearAll(){ Object.keys(selected).forEach(n=>resetColor(layerMap[n])); selected={}; order=[]; if(current){ resetColor(current); current=null;} updateLegend(); renderCompare(); document.getElementById('details').textContent='Click a country to view details.'; document.getElementById('details').classList.remove('hidden'); if(choicesInstance) choicesInstance.removeActiveItems(); }
 </script>
 </body>
 </html>
