@@ -60,8 +60,8 @@
     /* Dropdown */
     #dropdownContainer { display: flex; justify-content: center; margin-bottom: 16px; }
     #jurisdictionSelect {
-      width: 90%; /* fits nicely in panel */
-      max-width: 360px;
+      width: 90%; 
+      max-width: 420px;
       border-radius: 12px;
       border: 2px solid #192543;
       padding: 8px 12px;
@@ -153,7 +153,7 @@ const colors = ["#7fc28f","#07b0a0","#00a6c5","#ffd900","#4f9f35","#9b1e66"];
 let compareMode=false, selected={}, order=[], current=null, layerMap={};
 
 // Map setup
-const map = L.map('map',{zoomControl:false, scrollWheelZoom:false, doubleClickZoom:false, dragging:false}).setView([50,20],2.45);
+const map = L.map('map',{zoomControl:false, scrollWheelZoom:false, doubleClickZoom:false, dragging:false}).setView([50,20],2.47);
 L.rectangle([[-90,-180],[90,180]],{color:'#ffffff',weight:0,fillOpacity:1}).addTo(map);
 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{noWrap:true}).addTo(map);
 
@@ -166,7 +166,7 @@ const jurisdictionSelect = document.getElementById('jurisdictionSelect');
 fetch('countries.geojson')
   .then(r=>r.json())
   .then(data=>{
-    data.features = data.features.filter(f=>{ const name=f.properties.ADMIN||f.properties.NAME||f.properties.name_long||f.properties.name||"Unknown"; if(name==="Antarctica") return false; return true; });
+    data.features = data.features.filter(f=>{ const name=f.properties.ADMIN||f.properties.NAME||f.properties.name_long||f.properties.name||"Unknown"; return name!=="Antarctica"; });
     data.features.forEach(f=>{
       const name=f.properties.ADMIN||f.properties.NAME||f.properties.name_long||f.properties.name||"Unknown";
       const option=document.createElement('option'); option.value=name; option.textContent=name; jurisdictionSelect.appendChild(option);
@@ -190,20 +190,33 @@ document.getElementById('toggleCompare').addEventListener('change', function(){
   document.getElementById('compareTitle').classList.toggle('hidden',!compareMode);
   if(compareMode && current){
     const name=Object.keys(layerMap).find(n=>layerMap[n]===current);
-    if(name && !selected[name]){ const color=colors.find(c=>!Object.values(selected).includes(c))||colors[0]; selected[name]=color; order.push(name); setColor(current,color);}
-    document.getElementById('details').classList.add('hidden'); updateLegend(); renderCompare();
+    if(name && !selected[name]) addToSelection(name);
+    document.getElementById('details').classList.add('hidden');
+    updateLegend(); renderCompare();
   } else { document.getElementById('details').classList.remove('hidden'); }
   if(!compareMode) clearAll();
 });
 
 document.getElementById('clearAll').onclick=clearAll;
 
+function addToSelection(name){
+  const color = colors[order.length % colors.length]; // Repeats in sequence
+  selected[name]=color; order.push(name);
+  setColor(layerMap[name],color);
+}
+
 function handleClick(name){
   const layer=layerMap[name]; if(!layer) return;
-  if(compareMode){ if(selected[name]){ delete selected[name]; order=order.filter(n=>n!==name); resetColor(layer);} else{ const color=colors.find(c=>!Object.values(selected).includes(c))||colors[0]; selected[name]=color; order.push(name); setColor(layer,color);} document.getElementById('details').classList.add('hidden'); }
-  else{ if(current && current!==layer) resetColor(current); current=layer; setColor(layer,colors[0]); document.getElementById('details').classList.remove('hidden'); showDetails(name); }
-  Object.keys(selected).forEach(n=>{ if(layerMap[n]) setColor(layerMap[n], selected[n]); });
-  if(!compareMode && current) setColor(current, colors[0]);
+  if(compareMode){
+    if(selected[name]){ delete selected[name]; order=order.filter(n=>n!==name); resetColor(layer);}
+    else{ addToSelection(name); }
+    document.getElementById('details').classList.add('hidden');
+  } else {
+    if(current && current!==layer) resetColor(current);
+    current=layer; setColor(layer,colors[0]);
+    document.getElementById('details').classList.remove('hidden');
+    showDetails(name);
+  }
   jurisdictionSelect.value=name;
   updateLegend();
   if(compareMode) renderCompare();
@@ -230,7 +243,13 @@ function renderCompare(){
   html+='</tbody></table>'; el.innerHTML=html;
 }
 
-function clearAll(){ Object.keys(selected).forEach(n=>resetColor(layerMap[n])); selected={}; order=[]; if(current){ resetColor(current); current=null;} updateLegend(); renderCompare(); document.getElementById('details').textContent=''; jurisdictionSelect.value=''; }
+function clearAll(){
+  Object.keys(selected).forEach(n=>resetColor(layerMap[n]));
+  selected={}; order=[]; if(current){ resetColor(current); current=null; }
+  updateLegend(); renderCompare();
+  document.getElementById('details').textContent='Select a country to view details.';
+  jurisdictionSelect.value='';
+}
 </script>
 </body>
 </html>
