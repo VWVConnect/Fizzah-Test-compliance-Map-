@@ -27,7 +27,7 @@
       background: #ffffff !important;
     }
 
-    /* Panel width */
+    /* Panel */
     #panel {
       width: 480px;
       min-width: 420px;
@@ -36,6 +36,8 @@
       flex-direction: column;
       padding: 20px;
       box-sizing: border-box;
+      position: relative;
+      z-index: 10;
     }
 
     h2, h3 { margin-top: 0; color: #192543; text-align: center; }
@@ -141,26 +143,33 @@ const complianceData = {
 const colors = ["#7fc28f","#07b0a0","#00a6c5","#ffd900","#4f9f35","#9b1e66"];
 let compareMode=false, selected={}, order=[], current=null, layerMap={};
 
-// Map setup with middle-ground zoom
+// Map setup (non-draggable)
 const map = L.map('map', {
-  zoomControl:false,
-  scrollWheelZoom:false,
-  doubleClickZoom:false,
-  dragging:true,
+  zoomControl: false,
+  scrollWheelZoom: false,
+  doubleClickZoom: false,
+  dragging: false,      // disables dragging
+  boxZoom: false,
+  keyboard: false,
+  tap: false,
+  touchZoom: false,
   maxBounds: [[-90, -180], [90, 180]],
   maxBoundsViscosity: 1.0
-}).setView([50, 20], 2.45); // middle ground zoom
+}).setView([50, 20], 2.45);
 
-// White rectangle for background
+// White background rectangle
 const worldBounds = [[-90, -180], [90, 180]];
 L.rectangle(worldBounds, {color:'#ffffff', weight:0, fillOpacity:1}).addTo(map);
 
+// Tiles
 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { noWrap: true }).addTo(map);
 
+// Country layer styles
 function baseStyle(){ return { color:'#222', weight:1, fillColor:'#fdfdfd', fillOpacity:1 }; }
 function setColor(layer,color){ layer.setStyle({ fillColor:color, fillOpacity:1 }); layer.bringToFront(); }
 function resetColor(layer){ layer.setStyle(baseStyle()); }
 
+// Load countries
 fetch('countries.geojson')
   .then(r=>r.json())
   .then(data=>{
@@ -187,7 +196,7 @@ fetch('countries.geojson')
   });
 
 // Toggle compare mode
-document.getElementById('toggleCompare').onclick=()=>{
+document.getElementById('toggleCompare').onclick=()=> {
   compareMode=!compareMode;
   const btn=document.getElementById('toggleCompare');
   btn.textContent='Compare Mode: '+(compareMode?'ON':'OFF');
@@ -245,7 +254,7 @@ function handleClick(name){
   }
 }
 
-// Show details for info box
+// Show details
 function showDetails(name){
   const d=complianceData[name];
   const el=document.getElementById('details');
@@ -310,4 +319,3 @@ function clearAll(){
 </script>
 </body>
 </html>
-
