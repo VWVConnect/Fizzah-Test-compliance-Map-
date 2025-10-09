@@ -63,6 +63,7 @@ const complianceData = {
 const colors = ["#7fc28f","#07b0a0","#00a6c5","#ffd900","#4f9f35","#9b1e66"];
 let compareMode=false, selected={}, order=[], current=null, layerMap={};
 
+// Map setup
 const map = L.map('map',{
   zoomControl:false, scrollWheelZoom:false, doubleClickZoom:false, dragging:false,
   boxZoom:false, keyboard:false, tap:false, touchZoom:false,
@@ -73,8 +74,11 @@ L.rectangle([[-90,-180],[90,180]],{color:'#ffffff',weight:0,fillOpacity:1}).addT
 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{noWrap:true}).addTo(map);
 
 function baseStyle(){ return {color:'#222', weight:1, fillColor:'#fdfdfd', fillOpacity:1}; }
-function setColor(layer,color){ layer.setStyle({fillColor:color, fillOpacity:1}); layer.bringToFront(); }
-function resetColor(layer){ layer.setStyle(baseStyle()); }
+function setColor(layer,color){
+  layer.setStyle({fillColor:color, fillOpacity:1, color:'#07b0a0', weight:3, className:'highlighted'});
+  if(layer._path) layer._path.style.transition="all 0.3s ease";
+}
+function resetColor(layer){ layer.setStyle(baseStyle()); if(layer._path) layer._path.style.transition="all 0.3s ease"; }
 
 const jurisdictionSelect = document.getElementById('jurisdictionSelect');
 let choicesInstance;
@@ -105,7 +109,7 @@ fetch('countries.geojson')
 jurisdictionSelect.addEventListener('change', function(){
   const name = this.value;
   if(!name || !layerMap[name]) return;
-  handleClick(name); // always highlight
+  handleClick(name);
 });
 
 document.getElementById('toggleCompare').onclick=()=>{
@@ -143,11 +147,10 @@ function handleClick(name){
     if(current && current!==layer) resetColor(current); current=layer; setColor(layer,colors[0]); document.getElementById('details').classList.remove('hidden'); showDetails(name);
   }
 
-  // Always highlight on map, even if no info
+  // Always highlight selected countries with glow
   Object.keys(selected).forEach(n=>{ if(layerMap[n]) setColor(layerMap[n], selected[n]); });
   if(!compareMode && current) setColor(current, colors[0]);
 
-  // Sync dropdown
   if(choicesInstance) choicesInstance.setChoiceByValue(name);
 
   updateLegend();
@@ -179,4 +182,3 @@ function clearAll(){ Object.keys(selected).forEach(n=>resetColor(layerMap[n])); 
 </script>
 </body>
 </html>
-
