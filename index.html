@@ -153,7 +153,7 @@ const map = L.map('map', {
   touchZoom:false,
   maxBounds: [[-90, -180], [90, 180]],
   maxBoundsViscosity: 1.0
-}).setView([40, 20], 2.47); // Zoom set to 2.47
+}).setView([40, 20], 2.45); // slightly zoomed out from 2.5
 
 // White background
 const worldBounds = [[-90, -180], [90, 180]];
@@ -161,8 +161,5 @@ L.rectangle(worldBounds, {color:'#ffffff', weight:0, fillOpacity:1}).addTo(map);
 
 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { noWrap: true }).addTo(map);
 
-// --- Remaining JavaScript (click handlers, comparison table, legend, etc.) stays unchanged ---
-// Include all the previous handleClick, renderCompare, updateLegend, showDetails, and clearAll functions
-</script>
-</body>
-</html>
+// --- Remaining code unchanged ---
+
