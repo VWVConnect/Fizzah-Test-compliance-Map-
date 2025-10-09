@@ -74,7 +74,6 @@
       text-align: left;
       font-size: 13px;
     }
-    th:first-child { background: #07b0a0; color: #fff; } /* First header cell */
     #compareArea { margin-top: 8px; }
     .hidden { display: none; }
   </style>
@@ -150,7 +149,6 @@ document.getElementById('toggleCompare').onclick=()=>{
   document.getElementById('compareArea').classList.toggle('hidden',!compareMode);
   document.getElementById('compareTitle').classList.toggle('hidden',!compareMode);
 
-  // Include the currently selected country if any when enabling compare
   if(compareMode && current){
     const name = Object.keys(layerMap).find(n => layerMap[n]===current);
     if(name && !selected[name]){
@@ -225,14 +223,12 @@ function renderCompare(){
   const fields=['authority','law','transfers','fines','note'];
   const labels={authority:'Authority',law:'Law',transfers:'Transfers',fines:'Fines',note:'Note'};
 
-  // Start table
-  let html = '<table><thead><tr><th>Country</th>';
+  let html = '<table><thead><tr>';
   fields.forEach(f => html += `<th>${labels[f]}</th>`);
   html += '</tr></thead><tbody>';
 
   order.forEach(country => {
-    const color = selected[country];
-    html += `<tr><td style="background:${color}; color:#fff; font-weight:bold">${country}</td>`;
+    html += `<tr><td style="background:#192543; color:#fff; font-weight:bold">${country}</td>`;
     fields.forEach(f => {
       const value = complianceData[country] && complianceData[country][f] ? complianceData[country][f] : '';
       html += `<td>${value}</td>`;
