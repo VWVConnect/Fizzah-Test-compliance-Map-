@@ -141,7 +141,7 @@ const complianceData = {
 const colors = ["#7fc28f","#07b0a0","#00a6c5","#ffd900","#4f9f35","#9b1e66"];
 let compareMode=false, selected={}, order=[], current=null, layerMap={};
 
-// Map setup with slightly zoomed out view
+// Map setup with middle-ground zoom
 const map = L.map('map', {
   zoomControl:false,
   scrollWheelZoom:false,
@@ -149,7 +149,7 @@ const map = L.map('map', {
   dragging:true,
   maxBounds: [[-90, -180], [90, 180]],
   maxBoundsViscosity: 1.0
-}).setView([50, 20], 2.3);
+}).setView([50, 20], 2.4); // middle ground zoom
 
 // White rectangle for background
 const worldBounds = [[-90, -180], [90, 180]];
