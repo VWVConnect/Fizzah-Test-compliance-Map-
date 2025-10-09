@@ -15,15 +15,14 @@
     h2, h3 { margin-top: 0; color: #192543; text-align: center; }
 
     /* Comparison toggle */
-    #toggleContainer { text-align: center; margin-bottom: 12px; }
-    .toggle-labels { display: flex; justify-content: space-between; font-weight: 600; margin-bottom: 4px; color: #192543; font-size: 14px; }
-    .toggle-labels span { display: inline-block; }
-    .toggle-switch { position: relative; display: inline-block; width: 60px; height: 34px; }
+    #toggleContainer { text-align: center; margin-bottom: 12px; margin-top: 8px; }
+    .toggle-labels { display: flex; justify-content: space-between; font-weight: 600; margin-bottom: 2px; color: #192543; font-size: 14px; width: 60px; margin-left: auto; margin-right: auto; }
+    .toggle-switch { position: relative; display: inline-block; width: 60px; height: 32px; }
     .toggle-switch input { display: none; }
-    .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #ffffff; transition: .4s; border-radius: 34px; border: 2px solid #192543; }
-    .slider:before { position: absolute; content: ""; height: 28px; width: 28px; left: 3px; bottom: 3px; background-color: #07b0a0; transition: .4s; border-radius: 50%; }
+    .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #ffffff; transition: .4s; border-radius: 32px; border: 1px solid #192543; }
+    .slider:before { position: absolute; content: ""; height: 28px; width: 28px; left: 2px; bottom: 2px; background-color: #07b0a0; transition: .4s; border-radius: 50%; }
     input:checked + .slider { background-color: #07b0a0; }
-    input:checked + .slider:before { transform: translateX(26px); background-color: #ffffff; }
+    input:checked + .slider:before { transform: translateX(28px); background-color: #ffffff; }
 
     #instructions { text-align: center; margin-bottom: 12px; color: #555; font-size: 14px; }
 
@@ -34,8 +33,9 @@
       box-shadow: 0 2px 6px rgba(0,0,0,0.1) !important;
       padding: 8px 12px !important;
       background-color: #fff !important;
-      max-width: 280px;
+      max-width: 260px;
       margin: 0 auto;
+      position: relative;
     }
     .choices__list--dropdown .choices__item {
       border-radius: 8px;
@@ -189,8 +189,8 @@ function renderCompare(){ const el=document.getElementById('compareArea'); if(or
 const fields=['authority','law','transfers','fines','note']; const labels={authority:'Authority',law:'Law',transfers:'Transfers',fines:'Fines',note:'Notes'};
 let html='<table><thead><tr><th class="blank"></th>'; fields.forEach(f=>html+=`<th class="field">${labels[f]}</th>`); html+='</tr></thead><tbody>';
 order.forEach(country=>{ const color=selected[country]; html+=`<tr><td class="country" style="background:${color}">${country}</td>`; fields.forEach(f=>{ const value=complianceData[country]&&complianceData[country][f]?complianceData[country][f]:''; html+=`<td>${value}</td>`; }); html+='</tr>'; });
-html+='</tbody></table>'; el.innerHTML=html;
-}
+html+='</tbody></table>'; el.innerHTML=html;}
 </script>
 </body>
 </html>
+
