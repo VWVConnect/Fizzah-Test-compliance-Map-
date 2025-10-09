@@ -75,7 +75,7 @@ L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{noWrap:true}).
 
 function baseStyle(){ return {color:'#222', weight:1, fillColor:'#fdfdfd', fillOpacity:1}; }
 function setColor(layer,color){
-  layer.setStyle({fillColor:color, fillOpacity:1, color:'#07b0a0', weight:3, className:'highlighted'});
+  layer.setStyle({fillColor:color, fillOpacity:1, color:'#192543', weight:3});
   if(layer._path) layer._path.style.transition="all 0.3s ease";
 }
 function resetColor(layer){ layer.setStyle(baseStyle()); if(layer._path) layer._path.style.transition="all 0.3s ease"; }
@@ -147,7 +147,7 @@ function handleClick(name){
     if(current && current!==layer) resetColor(current); current=layer; setColor(layer,colors[0]); document.getElementById('details').classList.remove('hidden'); showDetails(name);
   }
 
-  // Always highlight selected countries with glow
+  // Always highlight selected countries with glow in #192543
   Object.keys(selected).forEach(n=>{ if(layerMap[n]) setColor(layerMap[n], selected[n]); });
   if(!compareMode && current) setColor(current, colors[0]);
 
