@@ -65,7 +65,7 @@ function resetColor(layer){ layer.setStyle(baseStyle()); }
 fetch('countries.geojson')
   .then(r=>r.json())
   .then(data=>{
-    // filter out Antarctica & small islands
+    // filter out Antarctica & tiny islands
     data.features = data.features.filter(f=>{
       const props = f.properties || {};
       const name = props.ADMIN || props.NAME || props.name_long || props.name || "Unknown";
@@ -74,8 +74,16 @@ fetch('countries.geojson')
         const w = Math.abs(f.bbox[2]-f.bbox[0]);
         const h = Math.abs(f.bbox[3]-f.bbox[1]);
         const area = w*h;
-        if (area < 1.5) return false; // remove small islands
+        if (area < 5) return false; // stricter filter removes most islands
       }
+      // remove known small island states
+      const exclude = [
+        "Tuvalu","Nauru","Palau","Marshall Islands","Micronesia",
+        "Seychelles","Maldives","Saint Kitts and Nevis","Saint Vincent and the Grenadines",
+        "Saint Lucia","Dominica","Antigua and Barbuda","Samoa","Tonga",
+        "Kiribati","Comoros","Vanuatu","Cape Verde","Barbados","Grenada"
+      ];
+      if (exclude.includes(name)) return false;
       return true;
     });
 
@@ -189,5 +197,6 @@ function clearAll(){
 </script>
 </body>
 </html>
+
 
 
