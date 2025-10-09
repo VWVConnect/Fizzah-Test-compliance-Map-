@@ -37,16 +37,15 @@ html, body {
   flex-direction: column;
   padding: 20px;
   box-sizing: border-box;
-  overflow: hidden;
   position: relative;
+  overflow: hidden;
 }
 
 #panelContent {
   flex: 1;
-  overflow-y: auto;
   display: flex;
   flex-direction: column;
-  padding-right: 6px;
+  overflow: hidden;
 }
 
 h2 { text-align: center; margin-top: 0; }
@@ -115,13 +114,10 @@ input:checked + .slider:before { transform: translateX(32px); }
 
 /* Comparison area */
 #compareArea {
+  flex: 1; /* grows to fill remaining space */
+  overflow-y: auto; /* vertical scroll if content exceeds space */
+  overflow-x: hidden;
   margin-top: 10px;
-  display: flex;
-  justify-content: flex-start;
-  max-height: 300px; /* vertical space for table */
-  overflow-x: auto;   /* horizontal scroll if table wide */
-  overflow-y: hidden;
-  padding-right: 6px;
 }
 
 /* Table */
@@ -130,7 +126,7 @@ input:checked + .slider:before { transform: translateX(32px); }
   border-spacing: 0;
   border-radius: 12px;
   overflow: hidden;
-  min-width: 100%;
+  width: 100%;
   box-shadow: 0 6px 16px rgba(0,0,0,0.08);
   table-layout: fixed; /* keeps header width fixed */
 }
