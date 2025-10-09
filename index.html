@@ -6,152 +6,54 @@
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin=""/>
 <style>
-html, body {
-  height: 100%;
-  margin: 0;
-  font-family: 'system-ui', sans-serif;
-  color: #192543;
-  background: #fff;
-}
-
-#app {
-  display: flex;
-  height: 100%;
-  width: 100%;
-  border: 4px solid #192543;
-  box-sizing: border-box;
-}
-
-#map {
-  flex: 1.5;
-  background: #ffffff;
-  cursor: pointer;
-  height: 100%;
-}
-
-#panel {
-  width: 480px;
-  min-width: 420px;
-  background: #f5f7f9;
-  display: flex;
-  flex-direction: column;
-  padding: 20px;
-  box-sizing: border-box;
-  overflow: hidden;
-  position: relative;
-}
-
-#panelContent {
-  flex: 1;
-  overflow-y: auto;
-  display: flex;
-  flex-direction: column;
-  padding-right: 6px;
-}
-
+html, body { height: 100%; margin: 0; font-family: 'system-ui', sans-serif; color: #192543; background: #fff; }
+#app { display: flex; height: 100%; width: 100%; border: 4px solid #192543; box-sizing: border-box; }
+#map { flex: 1.5; background: #ffffff; cursor: pointer; height: 100%; }
+#panel { width: 480px; min-width: 420px; background: #f5f7f9; display: flex; flex-direction: column; padding: 20px; box-sizing: border-box; overflow: hidden; position: relative; }
+#panelContent { flex: 1; overflow-y: auto; display: flex; flex-direction: column; padding-right: 6px; }
 h2 { text-align: center; margin-top: 0; }
 .hidden { display: none; }
 
 /* Toggle Switch */
-.toggle-container { display: flex; align-items: center; justify-content: center; margin-bottom: 12px; gap: 12px; }
-.toggle-label { font-weight: 600; font-size: 14px; }
-.switch { position: relative; display: inline-block; width: 60px; height: 28px; }
-.switch input { display: none; }
-.slider {
-  position: absolute;
-  cursor: pointer;
-  top: 0; left: 0; right: 0; bottom: 0;
-  background-color: #fff;
-  border: 2px solid #192543;
-  border-radius: 34px;
-  transition: 0.3s;
-}
-.slider:before {
-  position: absolute;
-  content: "";
-  height: 22px;
-  width: 22px;
-  left: 2px;
-  bottom: 2px;
-  background-color: #192543;
-  border-radius: 50%;
-  transition: 0.3s;
-}
-input:checked + .slider { background-color: #07b0a0; }
-input:checked + .slider:before { transform: translateX(32px); }
+.toggle-container { display:flex; align-items:center; justify-content:center; margin-bottom:12px; gap:12px; }
+.toggle-label { font-weight:600; font-size:14px; }
+.switch { position:relative; display:inline-block; width:60px; height:28px; }
+.switch input { display:none; }
+.slider { position:absolute; cursor:pointer; top:0; left:0; right:0; bottom:0; background-color:#fff; border:2px solid #192543; border-radius:34px; transition:0.3s; }
+.slider:before { position:absolute; content:""; height:22px; width:22px; left:2px; bottom:2px; background-color:#192543; border-radius:50%; transition:0.3s; }
+input:checked + .slider { background-color:#07b0a0; }
+input:checked + .slider:before { transform:translateX(32px); }
 
 /* Dropdown */
-#dropdownContainer { display: flex; justify-content: center; margin-bottom: 16px; }
-#jurisdictionSelect {
-  width: 90%;
-  max-width: 420px;
-  border-radius: 12px;
-  border: 2px solid #192543;
-  padding: 8px 12px;
-  font-size: 14px;
-  background: #fff;
-  color: #192543;
-}
+#dropdownContainer { display:flex; justify-content:center; margin-bottom:16px; }
+#jurisdictionSelect { width:90%; max-width:420px; border-radius:12px; border:2px solid #192543; padding:8px 12px; font-size:14px; background:#fff; color:#192543; }
 
 /* Buttons */
-#clearAll {
-  padding: 10px 18px;
-  border: none;
-  border-radius: 8px;
-  cursor: pointer;
-  background: #07b0a0;
-  color: #fff;
-  font-weight: 600;
-  flex-shrink: 0;
-  margin-top: 10px;
-}
-#clearAll:hover { background: #00a6c5; }
+#clearAll { padding:10px 18px; border:none; border-radius:8px; cursor:pointer; background:#07b0a0; color:#fff; font-weight:600; flex-shrink:0; margin-top:10px; }
+#clearAll:hover { background:#00a6c5; }
 
 /* Info card */
-#details { flex: none; margin-bottom: 16px; padding: 16px; border-radius: 14px; background: #fff; box-shadow: 0 6px 18px rgba(0,0,0,0.08); }
-#details h3 { margin-bottom: 10px; font-size: 18px; }
-#details p { margin: 4px 0; font-size: 14px; }
-#details .note { font-size: 13px; color: #555; margin-top: 6px; }
-
-/* Legend */
-.legend-item { display: flex; align-items: center; margin: 6px 0; gap: 8px; font-size: 14px; }
-.swatch { width: 18px; height: 14px; border-radius: 3px; border: 1px solid #999; }
+#details { flex:none; margin-bottom:16px; padding:16px; border-radius:14px; background:#fff; box-shadow:0 6px 18px rgba(0,0,0,0.08); }
+#details h3 { margin-bottom:10px; font-size:18px; }
+#details p { margin:4px 0; font-size:14px; }
+#details .note { font-size:13px; color:#555; margin-top:6px; }
 
 /* Comparison area */
-#compareArea {
-  margin-top: 10px;
-  display: flex;
-  justify-content: center;
-  max-height: 300px; /* fits inside info panel */
-  overflow-y: auto;   /* vertical scroll only */
-  overflow-x: hidden; /* prevent horizontal scroll */
-  padding-right: 6px;
-}
+#compareArea { margin-top:10px; display:flex; justify-content:center; max-height:300px; overflow-y:auto; overflow-x:hidden; padding-right:6px; }
 
 /* Table */
-#compareArea table {
-  border-collapse: separate;
-  border-spacing: 0;
-  border-radius: 12px;
-  overflow: hidden;
-  width: 100%;
-  max-width: 440px;
-  box-shadow: 0 6px 16px rgba(0,0,0,0.08);
-  table-layout: auto; /* columns adjust to content */
-}
-#compareArea th, #compareArea td { padding: 12px 10px; text-align: left; font-size: 13px; word-break: break-word; }
-#compareArea th.blank { background: #192543; color: #fff; }
-#compareArea th.field { background: #fff; color: #192543; font-weight: 600; }
-#compareArea td.country { font-weight: bold; color: #fff; text-align: center; }
-#compareArea tbody tr:nth-child(even) td:not(.country) { background-color: #f9f9f9; }
-#compareArea tbody tr:hover td:not(.country) { background-color: #e6f7f5; }
-
+#compareArea table { border-collapse: separate; border-spacing:0; border-radius:12px; overflow:hidden; width:100%; max-width:440px; box-shadow:0 6px 16px rgba(0,0,0,0.08); table-layout:auto; }
+#compareArea th, #compareArea td { padding:12px 10px; text-align:left; font-size:13px; word-break:break-word; }
+#compareArea th.blank { background:#192543; color:#fff; }
+#compareArea th.field { background:#fff; color:#192543; font-weight:600; }
+#compareArea td.country { font-weight:bold; color:#fff; text-align:center; }
+#compareArea tbody tr:nth-child(even) td:not(.country) { background-color:#f9f9f9; }
+#compareArea tbody tr:hover td:not(.country) { background-color:#e6f7f5; }
 </style>
 </head>
 <body>
 <div id="app">
   <div id="map"></div>
-
   <div id="panel">
     <div id="panelContent">
       <h2>GDPR Compliance Map</h2>
@@ -164,9 +66,7 @@ input:checked + .slider:before { transform: translateX(32px); }
         </label>
       </div>
 
-      <p style="text-align:center; font-size:14px; margin-bottom:12px;">
-        Click a country on the map or pick a country from the dropdown
-      </p>
+      <p style="text-align:center; font-size:14px; margin-bottom:12px;">Click a country on the map or pick a country from the dropdown</p>
 
       <div id="dropdownContainer">
         <select id="jurisdictionSelect">
@@ -175,7 +75,6 @@ input:checked + .slider:before { transform: translateX(32px); }
       </div>
 
       <div id="details">Select a country to view details.</div>
-      <div id="legend"></div>
 
       <h3 class="hidden" id="compareTitle">Comparison</h3>
       <div id="compareArea" class="hidden"></div>
@@ -197,15 +96,9 @@ const colors = ["#7fc28f","#07b0a0","#00a6c5","#ffd900","#4f9f35","#9b1e66"];
 let compareMode=false, selected={}, order=[], current=null, layerMap={};
 
 window.addEventListener("load", () => {
-  const map = L.map('map', {
-    zoomControl: false,
-    scrollWheelZoom: false,
-    doubleClickZoom: false,
-    dragging: false
-  }).setView([50, 20], 2.47);
-
+  const map = L.map('map', { zoomControl:false, scrollWheelZoom:false, doubleClickZoom:false, dragging:false }).setView([50,20],2.47);
   L.rectangle([[-90,-180],[90,180]], { color:'#ffffff', weight:0, fillOpacity:1 }).addTo(map);
-  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { noWrap:true }).addTo(map);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{ noWrap:true }).addTo(map);
 
   function baseStyle(){ return {color:'#222', weight:1, fillColor:'#fdfdfd', fillOpacity:1}; }
   function setColor(layer,color){ layer.setStyle({fillColor:color, fillOpacity:1, color:'#192543', weight:1.5}); }
@@ -230,8 +123,7 @@ window.addEventListener("load", () => {
       data.features.forEach(f=>{
         const name=f.properties.ADMIN||f.properties.NAME||f.properties.name_long||f.properties.name||"Unknown";
         const option=document.createElement('option');
-        option.value=name;
-        option.textContent=name;
+        option.value=name; option.textContent=name;
         jurisdictionSelect.appendChild(option);
       });
 
@@ -259,7 +151,7 @@ window.addEventListener("load", () => {
       const name=Object.keys(layerMap).find(n=>layerMap[n]===current);
       if(name && !selected[name]) addToSelection(name);
       document.getElementById('details').classList.add('hidden');
-      updateLegend(); renderCompare();
+      renderCompare();
     } else { document.getElementById('details').classList.remove('hidden'); }
     if(!compareMode) clearAll();
   });
@@ -276,7 +168,7 @@ window.addEventListener("load", () => {
     const layer=layerMap[name]; if(!layer) return;
     if(compareMode){
       if(selected[name]){ delete selected[name]; order=order.filter(n=>n!==name); resetColor(layer);}
-      else{ addToSelection(name); }
+      else addToSelection(name);
       document.getElementById('details').classList.add('hidden');
     } else {
       if(current && current!==layer) resetColor(current);
@@ -285,7 +177,6 @@ window.addEventListener("load", () => {
       showDetails(name);
     }
     jurisdictionSelect.value=name;
-    updateLegend();
     if(compareMode) renderCompare();
   }
 
@@ -302,15 +193,6 @@ window.addEventListener("load", () => {
         <p><strong>Fines:</strong> ${d.fines}</p>
         <p class="note">${d.note||''}</p>`;
     }
-  }
-
-  function updateLegend(){
-    const el=document.getElementById('legend');
-    el.innerHTML='';
-    order.forEach(n=>{
-      const color=selected[n];
-      el.innerHTML+=`<div class="legend-item"><div class="swatch" style="background:${color}"></div>${n}</div>`;
-    });
   }
 
   function renderCompare(){
@@ -337,7 +219,7 @@ window.addEventListener("load", () => {
   function clearAll(){
     Object.keys(selected).forEach(n=>resetColor(layerMap[n]));
     selected={}; order=[]; if(current){ resetColor(current); current=null; }
-    updateLegend(); renderCompare();
+    renderCompare();
     document.getElementById('details').textContent='Select a country to view details.';
     jurisdictionSelect.value='';
   }
