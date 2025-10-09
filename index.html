@@ -35,9 +35,7 @@
       margin-bottom: 12px;
       background: #fff;
       box-shadow: 0 2px 6px rgba(0,0,0,0.1);
-      transition: transform 0.2s;
     }
-    .jur-card:hover { transform: translateY(-2px); }
     button {
       padding: 10px 16px;
       border: none;
@@ -74,6 +72,18 @@
       text-align: left;
       font-size: 13px;
     }
+    th.blank {
+      background: #192543;
+      color: #fff;
+    }
+    th.field {
+      background: #fff;
+      color: #192543;
+    }
+    td.country {
+      font-weight: bold;
+      color: #fff; /* White text for countries */
+    }
     #compareArea { margin-top: 8px; }
     .hidden { display: none; }
   </style>
@@ -94,7 +104,7 @@
   </div>
 </div>
 
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin></script>
 <script>
 const complianceData = {
   "France": { authority:"CNIL", law:"GDPR + French Data Protection Act", fines:"Up to €20M or 4%", transfers:"SCCs, adequacy", note:"Strong enforcement history" },
@@ -221,14 +231,16 @@ function renderCompare(){
   if(order.length===0){ el.innerHTML=''; return; }
 
   const fields=['authority','law','transfers','fines','note'];
-  const labels={authority:'Authority',law:'Law',transfers:'Transfers',fines:'Fines',note:'Note'};
+  const labels={authority:'Authority',law:'Law',transfers:'Transfers',fines:'Fines',note:'Notes'};
 
   let html = '<table><thead><tr>';
-  fields.forEach(f => html += `<th>${labels[f]}</th>`);
+  html += '<th class="blank"></th>'; // blank first column
+  fields.forEach(f => html += `<th class="field">${labels[f]}</th>`);
   html += '</tr></thead><tbody>';
 
   order.forEach(country => {
-    html += `<tr><td style="background:#192543; color:#fff; font-weight:bold">${country}</td>`;
+    const color = selected[country];
+    html += `<tr><td class="country" style="background:${color}; color:#fff">${country}</td>`; // White text
     fields.forEach(f => {
       const value = complianceData[country] && complianceData[country][f] ? complianceData[country][f] : '';
       html += `<td>${value}</td>`;
