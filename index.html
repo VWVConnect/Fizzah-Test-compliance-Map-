@@ -75,7 +75,7 @@ L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{noWrap:true}).
 
 function baseStyle(){ return {color:'#222', weight:1, fillColor:'#fdfdfd', fillOpacity:1}; }
 function setColor(layer,color){
-  layer.setStyle({fillColor:color, fillOpacity:1, color:'#192543', weight:3});
+  layer.setStyle({fillColor:color, fillOpacity:1, color:'#192543', weight:1.5});
   if(layer._path) layer._path.style.transition="all 0.3s ease";
 }
 function resetColor(layer){ layer.setStyle(baseStyle()); if(layer._path) layer._path.style.transition="all 0.3s ease"; }
