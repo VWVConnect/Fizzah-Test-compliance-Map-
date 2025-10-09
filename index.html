@@ -13,10 +13,13 @@
     #panel { width:480px; min-width:420px; background:#f5f7f9; display:flex; flex-direction:column; padding:20px; box-sizing:border-box; position:relative; z-index:10; }
     h2,h3 { margin-top:0; color:#192543; text-align:center; }
 
-    .button-group { display:flex; gap:10px; margin-bottom:16px; justify-content:center; flex-direction:column; }
-    button { padding:10px 18px; border:none; border-radius:8px; cursor:pointer; background:#07b0a0; color:#fff; font-weight:600; transition: background 0.2s; }
-    button:hover { background:#00a6c5; }
-    button.active { background:#7fc28f; }
+    /* Toggle switch styling */
+    .switch { position: relative; display: inline-block; width: 60px; height: 28px; margin: 0 auto 12px auto; }
+    .switch input { opacity: 0; width: 0; height: 0; }
+    .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #ccc; transition: .4s; border-radius: 34px; }
+    .slider:before { position: absolute; content: ""; height: 20px; width: 20px; left: 4px; bottom: 4px; background-color: white; transition: .4s; border-radius: 50%; }
+    input:checked + .slider { background-color: #07b0a0; }
+    input:checked + .slider:before { transform: translateX(32px); }
 
     #details { flex:none; margin-bottom:16px; padding:16px; border-radius:14px; background:#fff; box-shadow:0 6px 18px rgba(0,0,0,0.08); transition: transform 0.2s ease, box-shadow 0.2s ease; }
     #details:hover { transform: translateY(-2px); box-shadow:0 10px 22px rgba(0,0,0,0.12); }
@@ -36,9 +39,6 @@
     #compareArea tbody tr:nth-child(even) td:not(.country) { background-color:#f9f9f9; }
     #compareArea tbody tr:hover td:not(.country) { background-color:#e6f7f5; }
 
-    .hidden { display:none; }
-
-    /* Choices.js dropdown styling */
     #jurisdictionSelect { margin-bottom:12px; border-radius:8px; padding:8px; border:1px solid #ccc; width:100%; }
     .choices__inner { border-radius:8px !important; border:1px solid #ccc !important; padding:8px 12px !important; background:#fff !important; font-size:14px !important; color:#192543 !important; box-shadow:0 4px 12px rgba(0,0,0,0.08); transition:border 0.2s,box-shadow 0.2s; }
     .choices__inner:focus-within { border-color:#07b0a0 !important; box-shadow:0 6px 16px rgba(0,176,160,0.3); }
@@ -46,6 +46,8 @@
     .choices__item--selectable { padding:6px 12px; font-size:14px; color:#192543; }
     .choices__item--selectable.is-highlighted, .choices__item--choice.is-highlighted { background:#07b0a0 !important; color:#fff !important; }
     .choices__placeholder { color:#888 !important; }
+
+    #clearAll { margin-top:12px; }
   </style>
 </head>
 <body>
@@ -54,20 +56,25 @@
   <div id="panel">
     <h2>GDPR Compliance Map</h2>
 
-    <div class="button-group">
-      <button id="toggleCompare">Compare Mode: OFF</button>
-    </div>
+    <!-- Toggle switch -->
+    <label class="switch">
+      <input type="checkbox" id="toggleCompare">
+      <span class="slider"></span>
+    </label>
 
+    <!-- Dropdown -->
     <select id="jurisdictionSelect"></select>
 
-    <div class="button-group">
-      <button id="clearAll">Clear</button>
-    </div>
-
-    <div id="details">Click a country to view details.</div>
-    <div id="legend"></div>
+    <!-- Comparison Table -->
     <h3 class="hidden" id="compareTitle">Comparison</h3>
     <div id="compareArea" class="hidden"></div>
+
+    <!-- Clear Button -->
+    <button id="clearAll">Clear</button>
+
+    <!-- Details and Legend -->
+    <div id="details">Click a country to view details.</div>
+    <div id="legend"></div>
   </div>
 </div>
 
@@ -124,13 +131,11 @@ jurisdictionSelect.addEventListener('change', function(){
   handleClick(name);
 });
 
-document.getElementById('toggleCompare').onclick=()=>{
-  compareMode=!compareMode;
-  const btn=document.getElementById('toggleCompare');
-  btn.textContent='Compare Mode: '+(compareMode?'ON':'OFF');
-  btn.classList.toggle('active',compareMode);
-  document.getElementById('compareArea').classList.toggle('hidden',!compareMode);
-  document.getElementById('compareTitle').classList.toggle('hidden',!compareMode);
+const toggleInput = document.getElementById('toggleCompare');
+toggleInput.addEventListener('change', function(){
+  compareMode = toggleInput.checked;
+  document.getElementById('compareArea').classList.toggle('hidden', !compareMode);
+  document.getElementById('compareTitle').classList.toggle('hidden', !compareMode);
   if(compareMode && current){
     const name=Object.keys(layerMap).find(n=>layerMap[n]===current);
     if(name && !selected[name]){
@@ -140,7 +145,7 @@ document.getElementById('toggleCompare').onclick=()=>{
     document.getElementById('details').classList.add('hidden'); updateLegend(); renderCompare();
   } else { document.getElementById('details').classList.remove('hidden'); }
   if(!compareMode) clearAll();
-};
+});
 
 document.getElementById('clearAll').onclick=clearAll;
 
