@@ -5,7 +5,6 @@
   <title>GDPR Compliance Map</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin=""/>
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/choices.js/public/assets/styles/choices.min.css"/>
   <style>
     html, body { height: 100%; margin: 0; background: #fff; font-family: 'system-ui', sans-serif; color: #192543; }
     #app { display: flex; height: 100%; width: 100%; border: 4px solid #192543; box-sizing: border-box; }
@@ -61,8 +60,8 @@
     /* Dropdown */
     #dropdownContainer { display: flex; justify-content: center; margin-bottom: 16px; }
     #jurisdictionSelect {
-      max-width: 360px;  /* widened for long country names */
-      width: 100%;
+      width: 90%; /* fits nicely in panel */
+      max-width: 360px;
       border-radius: 12px;
       border: 2px solid #192543;
       padding: 8px 12px;
@@ -121,9 +120,11 @@
     <!-- Instruction -->
     <p style="text-align:center; font-size:14px; margin-bottom:12px;">Click a country on the map or pick a country from the dropdown</p>
 
-    <!-- Dropdown -->
+    <!-- Regular Dropdown -->
     <div id="dropdownContainer">
-      <select id="jurisdictionSelect"></select>
+      <select id="jurisdictionSelect">
+        <option value="" disabled selected>Select a country</option>
+      </select>
     </div>
 
     <!-- Details -->
@@ -142,7 +143,6 @@
 </div>
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin></script>
-<script src="https://cdn.jsdelivr.net/npm/choices.js/public/assets/scripts/choices.min.js"></script>
 <script>
 const complianceData = {
   "France": { authority:"CNIL", law:"GDPR + French Data Protection Act", fines:"Up to €20M or 4%", transfers:"SCCs, adequacy", note:"Strong enforcement history" },
@@ -153,16 +153,15 @@ const colors = ["#7fc28f","#07b0a0","#00a6c5","#ffd900","#4f9f35","#9b1e66"];
 let compareMode=false, selected={}, order=[], current=null, layerMap={};
 
 // Map setup
-const map = L.map('map',{zoomControl:false, scrollWheelZoom:false, doubleClickZoom:false, dragging:false, boxZoom:false, keyboard:false, tap:false, touchZoom:false,maxBounds:[[ -90,-180],[90,180]], maxBoundsViscosity:1.0}).setView([50,20],2.45);
+const map = L.map('map',{zoomControl:false, scrollWheelZoom:false, doubleClickZoom:false, dragging:false}).setView([50,20],2.45);
 L.rectangle([[-90,-180],[90,180]],{color:'#ffffff',weight:0,fillOpacity:1}).addTo(map);
 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{noWrap:true}).addTo(map);
 
 function baseStyle(){ return {color:'#222', weight:1, fillColor:'#fdfdfd', fillOpacity:1}; }
-function setColor(layer,color){ layer.setStyle({fillColor:color, fillOpacity:1, color:'#192543', weight:1.5}); if(layer._path) layer._path.style.transition="all 0.3s ease"; }
-function resetColor(layer){ layer.setStyle(baseStyle()); if(layer._path) layer._path.style.transition="all 0.3s ease"; }
+function setColor(layer,color){ layer.setStyle({fillColor:color, fillOpacity:1, color:'#192543', weight:1.5}); }
+function resetColor(layer){ layer.setStyle(baseStyle()); }
 
 const jurisdictionSelect = document.getElementById('jurisdictionSelect');
-let choicesInstance;
 
 fetch('countries.geojson')
   .then(r=>r.json())
@@ -172,7 +171,6 @@ fetch('countries.geojson')
       const name=f.properties.ADMIN||f.properties.NAME||f.properties.name_long||f.properties.name||"Unknown";
       const option=document.createElement('option'); option.value=name; option.textContent=name; jurisdictionSelect.appendChild(option);
     });
-    choicesInstance = new Choices(jurisdictionSelect,{searchEnabled:true,removeItemButton:false,placeholder:true,shouldSort:false});
 
     L.geoJSON(data,{
       style:baseStyle,
@@ -180,31 +178,21 @@ fetch('countries.geojson')
         const name=feature.properties.ADMIN||feature.properties.NAME||feature.properties.name_long||feature.properties.name||"Unknown";
         layerMap[name]=layer;
         layer.on('click',()=>handleClick(name));
-        layer.on('mouseover',()=>{ if(!selected[name]) layer.setStyle({fillOpacity:0.9}); });
-        layer.on('mouseout',()=>{ if(!selected[name] && layer!==current) resetColor(layer); });
       }
     }).addTo(map);
   });
 
-// Dropdown
 jurisdictionSelect.addEventListener('change', function(){ const name = this.value; if(!name || !layerMap[name]) return; handleClick(name); });
 
-// Toggle
 document.getElementById('toggleCompare').addEventListener('change', function(){
   compareMode=this.checked;
   document.getElementById('compareArea').classList.toggle('hidden',!compareMode);
   document.getElementById('compareTitle').classList.toggle('hidden',!compareMode);
-
   if(compareMode && current){
     const name=Object.keys(layerMap).find(n=>layerMap[n]===current);
-    if(name && !selected[name]){
-      const color=colors.find(c=>!Object.values(selected).includes(c))||colors[0];
-      selected[name]=color; order.push(name); setColor(current,color);
-    }
+    if(name && !selected[name]){ const color=colors.find(c=>!Object.values(selected).includes(c))||colors[0]; selected[name]=color; order.push(name); setColor(current,color);}
     document.getElementById('details').classList.add('hidden'); updateLegend(); renderCompare();
-  } else {
-    document.getElementById('details').classList.remove('hidden');
-  }
+  } else { document.getElementById('details').classList.remove('hidden'); }
   if(!compareMode) clearAll();
 });
 
@@ -212,20 +200,11 @@ document.getElementById('clearAll').onclick=clearAll;
 
 function handleClick(name){
   const layer=layerMap[name]; if(!layer) return;
-
-  if(compareMode){
-    if(selected[name]){ delete selected[name]; order=order.filter(n=>n!==name); resetColor(layer);}
-    else{ const color=colors.find(c=>!Object.values(selected).includes(c))||colors[0]; selected[name]=color; order.push(name); setColor(layer,color);}
-    document.getElementById('details').classList.add('hidden');
-  } else {
-    if(current && current!==layer) resetColor(current); current=layer; setColor(layer,colors[0]); document.getElementById('details').classList.remove('hidden'); showDetails(name);
-  }
-
+  if(compareMode){ if(selected[name]){ delete selected[name]; order=order.filter(n=>n!==name); resetColor(layer);} else{ const color=colors.find(c=>!Object.values(selected).includes(c))||colors[0]; selected[name]=color; order.push(name); setColor(layer,color);} document.getElementById('details').classList.add('hidden'); }
+  else{ if(current && current!==layer) resetColor(current); current=layer; setColor(layer,colors[0]); document.getElementById('details').classList.remove('hidden'); showDetails(name); }
   Object.keys(selected).forEach(n=>{ if(layerMap[n]) setColor(layerMap[n], selected[n]); });
   if(!compareMode && current) setColor(current, colors[0]);
-
-  if(choicesInstance) choicesInstance.setChoiceByValue(name);
-
+  jurisdictionSelect.value=name;
   updateLegend();
   if(compareMode) renderCompare();
 }
@@ -251,7 +230,7 @@ function renderCompare(){
   html+='</tbody></table>'; el.innerHTML=html;
 }
 
-function clearAll(){ Object.keys(selected).forEach(n=>resetColor(layerMap[n])); selected={}; order=[]; if(current){ resetColor(current); current=null;} updateLegend(); renderCompare(); document.getElementById('details').textContent=''; document.getElementById('details').classList.remove('hidden'); if(choicesInstance) choicesInstance.removeActiveItems(); }
+function clearAll(){ Object.keys(selected).forEach(n=>resetColor(layerMap[n])); selected={}; order=[]; if(current){ resetColor(current); current=null;} updateLegend(); renderCompare(); document.getElementById('details').textContent=''; jurisdictionSelect.value=''; }
 </script>
 </body>
 </html>
