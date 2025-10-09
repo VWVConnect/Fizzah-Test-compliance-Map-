@@ -27,23 +27,25 @@
       background: #ffffff !important;
     }
 
-    /* Slightly narrower panel */
+    /* Widened panel to fit comparison table */
     #panel {
-      width: 380px;
-      min-width: 360px;
+      width: 450px;
+      min-width: 400px;
       background: #f5f7f9;
       display: flex;
       flex-direction: column;
       padding: 20px;
+      box-sizing: border-box;
     }
 
-    h2, h3 { margin-top: 0; color: #192543; }
+    h2, h3 { margin-top: 0; color: #192543; text-align: center; }
 
     /* Buttons */
     .button-group {
       display: flex;
       gap: 10px;
       margin-bottom: 16px;
+      justify-content: center;
     }
     button {
       padding: 10px 18px;
@@ -84,12 +86,19 @@
     .swatch { width: 18px; height: 14px; border-radius: 3px; border: 1px solid #999; }
 
     /* Comparison table */
+    #compareArea {
+      margin-top: 10px;
+      flex: none;
+      display: flex;
+      justify-content: center; /* center the table */
+    }
     #compareArea table {
       border-collapse: separate;
       border-spacing: 0;
       border-radius: 12px;
       overflow: hidden;
       width: 100%;
+      max-width: 420px; /* fit panel */
       box-shadow: 0 6px 16px rgba(0,0,0,0.08);
     }
     #compareArea th, #compareArea td {
@@ -99,10 +108,9 @@
     }
     #compareArea th.blank { background: #192543; color: #fff; }
     #compareArea th.field { background: #fff; color: #192543; font-weight: 600; }
-    #compareArea td.country { font-weight: bold; color: #fff; }
+    #compareArea td.country { font-weight: bold; color: #fff; text-align: center; }
     #compareArea tbody tr:nth-child(even) td:not(.country) { background-color: #f9f9f9; }
     #compareArea tbody tr:hover td:not(.country) { background-color: #e6f7f5; }
-    #compareArea { margin-top: 10px; flex: none; }
 
     .hidden { display: none; }
   </style>
@@ -141,15 +149,13 @@ const map = L.map('map', {
   dragging:true,
   maxBounds: [[-90, -180], [90, 180]],
   maxBoundsViscosity: 1.0
-}).setView([50, 50], 2);
+}).setView([50, 20], 2.3); // slightly zoomed in
 
-// Add white rectangle as base layer to avoid blue background
+// White rectangle under tiles to ensure background is white
 const worldBounds = [[-90, -180], [90, 180]];
 L.rectangle(worldBounds, {color:'#ffffff', weight:0, fillOpacity:1}).addTo(map);
 
-L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-  noWrap: true
-}).addTo(map);
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { noWrap: true }).addTo(map);
 
 function baseStyle(){ return { color:'#222', weight:1, fillColor:'#fdfdfd', fillOpacity:1 }; }
 function setColor(layer,color){ layer.setStyle({ fillColor:color, fillOpacity:1 }); layer.bringToFront(); }
