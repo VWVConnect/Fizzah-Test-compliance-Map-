@@ -20,7 +20,7 @@
       box-sizing: border-box;
     }
 
-    /* Map takes more space */
+    /* Map */
     #map { 
       flex: 1.5; 
       cursor: pointer; 
@@ -90,7 +90,7 @@
       margin-top: 10px;
       flex: none;
       display: flex;
-      justify-content: center; /* center table */
+      justify-content: center;
     }
     #compareArea table {
       border-collapse: separate;
@@ -98,7 +98,7 @@
       border-radius: 12px;
       overflow: hidden;
       width: 100%;
-      max-width: 440px; /* fit panel */
+      max-width: 440px;
       box-shadow: 0 6px 16px rgba(0,0,0,0.08);
     }
     #compareArea th, #compareArea td {
@@ -141,7 +141,7 @@ const complianceData = {
 const colors = ["#7fc28f","#07b0a0","#00a6c5","#ffd900","#4f9f35","#9b1e66"];
 let compareMode=false, selected={}, order=[], current=null, layerMap={};
 
-// Map setup
+// Map setup with slightly zoomed out view
 const map = L.map('map', {
   zoomControl:false,
   scrollWheelZoom:false,
@@ -149,7 +149,7 @@ const map = L.map('map', {
   dragging:true,
   maxBounds: [[-90, -180], [90, 180]],
   maxBoundsViscosity: 1.0
-}).setView([50, 20], 2.5); // slightly more zoomed
+}).setView([50, 20], 2.3);
 
 // White rectangle for background
 const worldBounds = [[-90, -180], [90, 180]];
@@ -195,7 +195,6 @@ document.getElementById('toggleCompare').onclick=()=>{
   document.getElementById('compareArea').classList.toggle('hidden',!compareMode);
   document.getElementById('compareTitle').classList.toggle('hidden',!compareMode);
 
-  // Hide details if the country is in comparison
   if(compareMode && current){
     const name = Object.keys(layerMap).find(n => layerMap[n]===current);
     if(name && !selected[name]){
@@ -311,3 +310,4 @@ function clearAll(){
 </script>
 </body>
 </html>
+
