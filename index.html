@@ -101,9 +101,12 @@ fetch('countries.geojson')
     }).addTo(map);
   });
 
+// Dropdown selection
 jurisdictionSelect.addEventListener('change', function(){
   const name = this.value;
   if(!name || !layerMap[name]) return;
+
+  // Force handleClick to respect comparison mode
   handleClick(name);
 });
 
@@ -138,7 +141,6 @@ function handleClick(name){
     if(selected[name]){ delete selected[name]; order=order.filter(n=>n!==name); resetColor(layer);}
     else{ const color=colors.find(c=>!Object.values(selected).includes(c))||colors[0]; selected[name]=color; order.push(name); setColor(layer,color);}
     document.getElementById('details').classList.add('hidden');
-    updateLegend(); renderCompare();
   } else {
     if(current && current!==layer) resetColor(current); current=layer; setColor(layer,colors[0]); document.getElementById('details').classList.remove('hidden'); showDetails(name);
   }
@@ -146,11 +148,16 @@ function handleClick(name){
   // Sync dropdown
   if(choicesInstance) choicesInstance.setChoiceByValue(name);
 
-  // Highlight all selected countries
+  // Highlight all selected countries in comparison mode
   Object.keys(selected).forEach(n=>{
     if(layerMap[n]) setColor(layerMap[n], selected[n]);
   });
+
+  // Highlight current in single mode
   if(!compareMode && current) setColor(current, colors[0]);
+
+  updateLegend();
+  if(compareMode) renderCompare();
 }
 
 function showDetails(name){
