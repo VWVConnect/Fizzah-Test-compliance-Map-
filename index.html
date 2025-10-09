@@ -8,7 +8,7 @@
   <style>
     html, body { height: 100%; margin: 0; background: #fff; font-family: system-ui, sans-serif; }
     #app { display: flex; height: 100%; width: 100%; }
-    #map { flex: 1; background: #fff; }
+    #map { flex: 1; background: #fff; cursor: pointer; }
     #panel { width: 380px; border-left: 1px solid #ccc; padding: 12px; overflow-y: auto; background: #fff; }
     h2 { margin-top: 0; }
     .jur-card { border: 1px solid #ddd; border-radius: 6px; padding: 8px; background: #fafafa; margin-bottom: 10px; }
@@ -18,7 +18,6 @@
     .swatch { width: 18px; height: 14px; border: 1px solid #999; border-radius: 2px; }
     table { border-collapse: collapse; width: 100%; margin-top: 10px; }
     th, td { border: 1px solid #ddd; padding: 6px; text-align: left; font-size: 13px; }
-    .country { cursor: pointer; }
   </style>
 </head>
 <body>
@@ -63,20 +62,19 @@ function baseStyle(){ return { color:'#222', weight:1, fillColor:'#fdfdfd', fill
 function setColor(layer,color){ layer.setStyle({ fillColor:color, fillOpacity:1 }); layer.bringToFront(); }
 function resetColor(layer){ layer.setStyle(baseStyle()); }
 
-// Load local countries.geojson
 fetch('countries.geojson')
   .then(r=>r.json())
   .then(data=>{
-    // filter out Antarctica and small islands
+    // filter out Antarctica & small islands
     data.features = data.features.filter(f=>{
-      const name = f.properties.ADMIN;
-      if (name==="Antarctica") return false;
-      // Rough bounding box filter for small islands
+      const props = f.properties || {};
+      const name = props.ADMIN || props.NAME || props.name_long || props.name || "Unknown";
+      if (name === "Antarctica") return false;
       if (f.bbox){
         const w = Math.abs(f.bbox[2]-f.bbox[0]);
         const h = Math.abs(f.bbox[3]-f.bbox[1]);
         const area = w*h;
-        if (area < 1.5) return false; // filter small specks
+        if (area < 1.5) return false; // remove small islands
       }
       return true;
     });
@@ -84,7 +82,8 @@ fetch('countries.geojson')
     L.geoJSON(data,{
       style:baseStyle,
       onEachFeature:(feature,layer)=>{
-        const name = feature.properties.ADMIN;
+        const props = feature.properties || {};
+        const name = props.ADMIN || props.NAME || props.name_long || props.name || "Unknown";
         layerMap[name]=layer;
         layer.on('click',()=>handleClick(name));
         layer.on('mouseover',()=>layer.setStyle({ fillOpacity:0.9 }));
@@ -93,7 +92,8 @@ fetch('countries.geojson')
         });
       }
     }).addTo(map);
-  });
+  })
+  .catch(err=>console.error("GeoJSON load error:", err));
 
 document.getElementById('toggleCompare').onclick=()=>{
   compareMode=!compareMode;
@@ -189,4 +189,5 @@ function clearAll(){
 </script>
 </body>
 </html>
+
 
