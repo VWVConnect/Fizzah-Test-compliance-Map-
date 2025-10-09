@@ -15,25 +15,27 @@
     h2 { margin-top: 0; color: #192543; text-align: center; }
     h3 { margin-top: 10px; color: #192543; text-align: center; }
 
-    /* Toggle label */
-    #toggleLabel { text-align: center; font-weight: 600; margin-bottom: 6px; }
-    .toggle-status { text-align: center; font-weight: 600; margin-bottom: 12px; color: #192543; }
+    /* Toggle switch container */
+    #toggleContainer { text-align: center; margin-bottom: 12px; }
+    .toggle-labels { display: flex; justify-content: space-between; font-weight: 600; margin-bottom: 4px; color: #192543; }
+    .toggle-labels span { font-size: 14px; }
 
+    /* Toggle switch */
     .toggle-switch {
       position: relative;
       display: inline-block;
       width: 60px;
       height: 34px;
-      margin: 0 auto 12px auto;
     }
-    .toggle-switch input { display:none; }
+    .toggle-switch input { display: none; }
     .slider {
       position: absolute;
       cursor: pointer;
       top: 0; left: 0; right: 0; bottom: 0;
-      background-color: #07b0a0;
+      background-color: #ffffff; /* OFF background */
       transition: .4s;
       border-radius: 34px;
+      border: 2px solid #192543;
     }
     .slider:before {
       position: absolute;
@@ -41,29 +43,38 @@
       height: 26px; width: 26px;
       left: 4px;
       bottom: 4px;
-      background-color: white;
+      background-color: #07b0a0;
       transition: .4s;
       border-radius: 50%;
     }
-    input:checked + .slider { background-color: #00a6c5; }
-    input:checked + .slider:before { transform: translateX(26px); }
-
-    /* Dropdown */
-    #dropdownContainer { margin-bottom: 16px; text-align: center; }
-    #jurisdictionSelect { 
-      width: 85%; 
-      max-width: 380px;
-      border-radius: 8px; 
-      padding: 8px; 
-      border: 1px solid #192543; 
-      display:block;
-      margin:0 auto;
-      box-sizing:border-box;
-      font-size:14px;
+    input:checked + .slider {
+      background-color: #07b0a0; /* ON background */
+    }
+    input:checked + .slider:before {
+      transform: translateX(26px);
       background-color: #ffffff;
-      color: #192543;
     }
 
+    /* Instructions */
+    #instructions { text-align: center; margin-bottom: 12px; color: #555; font-size: 14px; }
+
+    /* Dropdown styling */
+    #dropdownContainer { margin-bottom: 16px; text-align: center; }
+    #jurisdictionSelect {
+      width: 80%;
+      max-width: 360px;
+      border-radius: 12px;
+      padding: 8px 12px;
+      border: 2px solid #192543;
+      box-sizing: border-box;
+      font-size: 14px;
+      background-color: #fff;
+      color: #192543;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+      appearance: none;
+    }
+
+    /* Info card */
     #details { flex: none; margin-bottom: 16px; padding: 16px; border-radius: 14px; background: #fff; box-shadow: 0 6px 18px rgba(0,0,0,0.08); transition: transform 0.2s ease, box-shadow 0.2s ease; display:none; }
     #details h3 { margin-bottom: 10px; font-size: 18px; }
     #details p { margin: 4px 0; font-size: 14px; }
@@ -84,8 +95,6 @@
     #clearButton { margin-top: auto; padding: 10px 18px; border: none; border-radius: 8px; cursor: pointer; background: #07b0a0; color: #fff; font-weight: 600; transition: background 0.2s; display:block; }
     #clearButton:hover { background: #00a6c5; }
 
-    #instructions { text-align: center; margin-bottom: 12px; color: #555; font-size: 14px; }
-
     .hidden { display: none; }
   </style>
 </head>
@@ -96,12 +105,13 @@
     <h2>GDPR Compliance Map</h2>
 
     <!-- Comparison toggle -->
-    <div id="toggleLabel">Comparison Mode</div>
-    <div class="toggle-status" id="toggleStatus">OFF</div>
-    <label class="toggle-switch">
-      <input type="checkbox" id="toggleCompare">
-      <span class="slider"></span>
-    </label>
+    <div id="toggleContainer">
+      <div class="toggle-labels"><span>OFF</span><span>ON</span></div>
+      <label class="toggle-switch">
+        <input type="checkbox" id="toggleCompare">
+        <span class="slider"></span>
+      </label>
+    </div>
 
     <div id="instructions">Click a country or pick a country from the dropdown</div>
 
@@ -165,12 +175,9 @@ fetch('countries.geojson')
     }}).addTo(map);
   });
 
-// Toggle update
 const toggleInput=document.getElementById('toggleCompare');
-const toggleStatus=document.getElementById('toggleStatus');
 toggleInput.addEventListener('change', function(){
   compareMode = toggleInput.checked;
-  toggleStatus.textContent = compareMode ? "ON" : "OFF";
   document.getElementById('compareTitle').style.display = compareMode ? 'block' : 'none';
   document.getElementById('compareArea').classList.toggle('hidden', !compareMode);
 
@@ -186,7 +193,6 @@ toggleInput.addEventListener('change', function(){
   if(!compareMode) clearAll();
 });
 
-// Dropdown selection
 jurisdictionSelect.addEventListener('change', function(){
   const name = this.value;
   if(!name || !layerMap[name]) return;
