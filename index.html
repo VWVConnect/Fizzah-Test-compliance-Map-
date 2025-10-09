@@ -83,8 +83,25 @@
     .legend-item { display: flex; align-items: center; margin: 6px 0; gap: 8px; font-size: 14px; }
     .swatch { width: 18px; height: 14px; border-radius: 3px; border: 1px solid #999; }
 
+    /* Comparison area */
+    #compareArea { 
+      margin-top: 10px; 
+      flex: none; 
+      display: flex; 
+      justify-content: center; 
+      max-height: 320px;   /* ✅ limits height */
+      overflow-y: auto;    /* ✅ adds scroll */
+      padding-right: 6px;  /* space for scrollbar */
+    }
+    #compareArea::-webkit-scrollbar {
+      width: 8px;
+    }
+    #compareArea::-webkit-scrollbar-thumb {
+      background: #07b0a0;
+      border-radius: 4px;
+    }
+
     /* Comparison table */
-    #compareArea { margin-top: 10px; flex: none; display: flex; justify-content: center; }
     #compareArea table {
       border-collapse: separate;
       border-spacing: 0;
