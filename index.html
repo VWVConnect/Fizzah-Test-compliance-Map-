@@ -12,17 +12,24 @@
     #map { flex: 1.5; cursor: pointer; background: #ffffff !important; }
     #panel { width: 480px; min-width: 420px; background: #f5f7f9; display: flex; flex-direction: column; padding: 20px; box-sizing: border-box; position: relative; z-index: 10; }
     h2, h3 { margin-top: 0; color: #192543; text-align: center; }
+
     .button-group { display: flex; gap: 10px; margin-bottom: 16px; justify-content: center; }
     button { padding: 10px 18px; border: none; border-radius: 8px; cursor: pointer; background: #07b0a0; color: #fff; font-weight: 600; transition: background 0.2s; }
     button:hover { background: #00a6c5; }
     button.active { background: #7fc28f; }
-    #details { flex: none; margin-bottom: 16px; padding: 16px; border-radius: 14px; background: #fff; box-shadow: 0 6px 18px rgba(0,0,0,0.08); transition: transform 0.2s ease, box-shadow 0.2s ease; }
-    #details:hover { transform: translateY(-2px); box-shadow: 0 10px 22px rgba(0,0,0,0.12); }
-    #details h3 { margin-bottom: 10px; font-size: 18px; }
-    #details p { margin: 4px 0; font-size: 14px; }
-    #details .note { font-size: 13px; color: #555; margin-top: 6px; }
+
+    #details {
+      flex: none; margin-bottom: 16px; padding: 20px; border-radius: 16px; background: #fff;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.1); transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+    #details:hover { transform: translateY(-2px); box-shadow: 0 12px 28px rgba(0,0,0,0.15); }
+    #details h3 { margin-bottom: 12px; font-size: 20px; color: #192543; }
+    #details p { margin: 6px 0; font-size: 14px; line-height: 1.5; }
+    #details .note { font-size: 13px; color: #555; margin-top: 10px; font-style: italic; }
+
     .legend-item { display: flex; align-items: center; margin: 6px 0; gap: 8px; font-size: 14px; }
     .swatch { width: 18px; height: 14px; border-radius: 3px; border: 1px solid #999; }
+
     #compareArea { margin-top: 10px; flex: none; display: flex; justify-content: center; }
     #compareArea table { border-collapse: separate; border-spacing: 0; border-radius: 12px; overflow: hidden; width: 100%; max-width: 440px; box-shadow: 0 6px 16px rgba(0,0,0,0.08); }
     #compareArea th, #compareArea td { padding: 12px 10px; text-align: left; font-size: 13px; }
@@ -31,6 +38,7 @@
     #compareArea td.country { font-weight: bold; color: #fff; text-align: center; }
     #compareArea tbody tr:nth-child(even) td:not(.country) { background-color: #f9f9f9; }
     #compareArea tbody tr:hover td:not(.country) { background-color: #e6f7f5; }
+
     .hidden { display: none; }
     #jurisdictionSelect { margin-bottom: 12px; border-radius: 8px; padding: 8px; border: 1px solid #ccc; width: 100%; }
   </style>
@@ -69,7 +77,6 @@ const map = L.map('map',{
   boxZoom:false, keyboard:false, tap:false, touchZoom:false,
   maxBounds:[[ -90,-180],[90,180]], maxBoundsViscosity:1.0
 }).setView([50,20],2.45);
-
 L.rectangle([[-90,-180],[90,180]],{color:'#ffffff',weight:0,fillOpacity:1}).addTo(map);
 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{noWrap:true}).addTo(map);
 
