@@ -11,6 +11,7 @@
       font-family: 'system-ui', sans-serif;
       color: #192543;
     }
+
     #app {
       display: flex;
       height: 100%;
@@ -18,24 +19,52 @@
       border: 4px solid #192543;
       box-sizing: border-box;
     }
+
     #map { flex: 1; cursor: pointer; background: #fff; }
+
     #panel {
-      width: 380px;
+      width: 400px;
       border-left: 1px solid #ddd;
       padding: 16px;
       overflow-y: auto;
-      background: #f9f9f9;
+      background: #f5f5f5;
       display: flex;
       flex-direction: column;
     }
+
     h2, h3 { margin-top: 0; color: #192543; }
+
+    /* Modern info card */
     .jur-card {
-      border-radius: 12px;
-      padding: 12px;
-      margin-bottom: 12px;
+      border-radius: 14px;
+      padding: 16px;
+      margin-bottom: 16px;
       background: #fff;
-      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+      box-shadow: 0 6px 18px rgba(0,0,0,0.08);
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
     }
+
+    .jur-card:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 10px 25px rgba(0,0,0,0.12);
+    }
+
+    .jur-card h3 {
+      margin-bottom: 10px;
+      font-size: 18px;
+    }
+
+    .jur-card p {
+      margin: 4px 0;
+      font-size: 14px;
+    }
+
+    .jur-card .note {
+      font-size: 13px;
+      color: #555;
+      margin-top: 6px;
+    }
+
     button {
       padding: 10px 16px;
       border: none;
@@ -46,9 +75,12 @@
       font-weight: 600;
       transition: background 0.2s;
     }
+
     button:hover { background: #00a6c5; }
     button.active { background: #7fc28f; }
+
     .button-group { display: flex; gap: 10px; margin-bottom: 12px; }
+
     .legend-item {
       display: flex;
       align-items: center;
@@ -56,35 +88,54 @@
       gap: 8px;
       font-size: 14px;
     }
+
     .swatch { width: 18px; height: 14px; border-radius: 3px; border: 1px solid #999; }
-    table {
-      border-collapse: collapse;
-      width: 100%;
-      margin-top: 12px;
-      background: #fff;
-      border-radius: 8px;
+
+    /* Modern comparison table */
+    #compareArea table {
+      border-collapse: separate;
+      border-spacing: 0;
+      border-radius: 12px;
       overflow: hidden;
-      box-shadow: 0 2px 4px rgba(0,0,0,0.08);
+      width: 100%;
+      box-shadow: 0 6px 16px rgba(0,0,0,0.08);
     }
-    th, td {
-      border: 1px solid #ddd;
-      padding: 8px;
+
+    #compareArea th, #compareArea td {
+      padding: 12px 10px;
       text-align: left;
       font-size: 13px;
     }
-    th.blank {
+
+    #compareArea th.blank {
       background: #192543;
       color: #fff;
     }
-    th.field {
+
+    #compareArea th.field {
       background: #fff;
       color: #192543;
+      font-weight: 600;
     }
-    td.country {
+
+    #compareArea td.country {
       font-weight: bold;
-      color: #fff; /* White text for countries */
+      color: #fff; /* White text for country names */
     }
-    #compareArea { margin-top: 8px; }
+
+    #compareArea tbody tr:nth-child(even) td:not(.country) {
+      background-color: #f9f9f9;
+    }
+
+    #compareArea tbody tr:hover td:not(.country) {
+      background-color: #e6f7f5;
+    }
+
+    #compareArea {
+      margin-top: 10px;
+      overflow-x: auto;
+    }
+
     .hidden { display: none; }
   </style>
 </head>
@@ -208,11 +259,11 @@ function showDetails(name){
   else{
     el.innerHTML=`<div class="jur-card">
       <h3>${name}</h3>
-      <p><b>Authority:</b> ${d.authority}</p>
-      <p><b>Law:</b> ${d.law}</p>
-      <p><b>Transfers:</b> ${d.transfers}</p>
-      <p><b>Fines:</b> ${d.fines}</p>
-      <p>${d.note||''}</p>
+      <p><strong>Authority:</strong> ${d.authority}</p>
+      <p><strong>Law:</strong> ${d.law}</p>
+      <p><strong>Transfers:</strong> ${d.transfers}</p>
+      <p><strong>Fines:</strong> ${d.fines}</p>
+      <p class="note">${d.note||''}</p>
     </div>`;
   }
 }
@@ -234,13 +285,13 @@ function renderCompare(){
   const labels={authority:'Authority',law:'Law',transfers:'Transfers',fines:'Fines',note:'Notes'};
 
   let html = '<table><thead><tr>';
-  html += '<th class="blank"></th>'; // blank first column
+  html += '<th class="blank"></th>';
   fields.forEach(f => html += `<th class="field">${labels[f]}</th>`);
   html += '</tr></thead><tbody>';
 
   order.forEach(country => {
     const color = selected[country];
-    html += `<tr><td class="country" style="background:${color}; color:#fff">${country}</td>`; // White text
+    html += `<tr><td class="country" style="background:${color}">${country}</td>`;
     fields.forEach(f => {
       const value = complianceData[country] && complianceData[country][f] ? complianceData[country][f] : '';
       html += `<td>${value}</td>`;
@@ -263,3 +314,4 @@ function clearAll(){
 </script>
 </body>
 </html>
+
