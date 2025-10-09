@@ -17,6 +17,7 @@
 
     /* Toggle label */
     #toggleLabel { text-align: center; font-weight: 600; margin-bottom: 6px; }
+    .toggle-status { text-align: center; font-weight: 600; margin-bottom: 12px; color: #192543; }
 
     .toggle-switch {
       position: relative;
@@ -48,9 +49,10 @@
     input:checked + .slider:before { transform: translateX(26px); }
 
     /* Dropdown */
-    #dropdownContainer { margin-bottom: 16px; }
+    #dropdownContainer { margin-bottom: 16px; text-align: center; }
     #jurisdictionSelect { 
-      width: 95%; 
+      width: 85%; 
+      max-width: 380px;
       border-radius: 8px; 
       padding: 8px; 
       border: 1px solid #192543; 
@@ -58,6 +60,8 @@
       margin:0 auto;
       box-sizing:border-box;
       font-size:14px;
+      background-color: #ffffff;
+      color: #192543;
     }
 
     #details { flex: none; margin-bottom: 16px; padding: 16px; border-radius: 14px; background: #fff; box-shadow: 0 6px 18px rgba(0,0,0,0.08); transition: transform 0.2s ease, box-shadow 0.2s ease; display:none; }
@@ -93,6 +97,7 @@
 
     <!-- Comparison toggle -->
     <div id="toggleLabel">Comparison Mode</div>
+    <div class="toggle-status" id="toggleStatus">OFF</div>
     <label class="toggle-switch">
       <input type="checkbox" id="toggleCompare">
       <span class="slider"></span>
@@ -160,9 +165,12 @@ fetch('countries.geojson')
     }}).addTo(map);
   });
 
+// Toggle update
 const toggleInput=document.getElementById('toggleCompare');
+const toggleStatus=document.getElementById('toggleStatus');
 toggleInput.addEventListener('change', function(){
   compareMode = toggleInput.checked;
+  toggleStatus.textContent = compareMode ? "ON" : "OFF";
   document.getElementById('compareTitle').style.display = compareMode ? 'block' : 'none';
   document.getElementById('compareArea').classList.toggle('hidden', !compareMode);
 
@@ -178,6 +186,7 @@ toggleInput.addEventListener('change', function(){
   if(!compareMode) clearAll();
 });
 
+// Dropdown selection
 jurisdictionSelect.addEventListener('change', function(){
   const name = this.value;
   if(!name || !layerMap[name]) return;
