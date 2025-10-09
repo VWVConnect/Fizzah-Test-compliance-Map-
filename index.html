@@ -22,51 +22,28 @@
 
     #map { flex: 1; cursor: pointer; background: #fff; }
 
+    /* Modern, integrated panel */
     #panel {
-      width: 400px;
-      border-left: 1px solid #ddd;
-      padding: 16px;
-      overflow-y: auto;
-      background: #f5f5f5;
+      width: 480px;
+      min-width: 450px;
+      border-left: none;
+      background: #f5f7f9;
       display: flex;
       flex-direction: column;
+      padding: 20px;
+      box-shadow: inset 0 0 0 0 transparent; /* optional subtle inset shadow */
     }
 
     h2, h3 { margin-top: 0; color: #192543; }
 
-    /* Modern info card */
-    .jur-card {
-      border-radius: 14px;
-      padding: 16px;
+    /* Buttons */
+    .button-group {
+      display: flex;
+      gap: 10px;
       margin-bottom: 16px;
-      background: #fff;
-      box-shadow: 0 6px 18px rgba(0,0,0,0.08);
-      transition: transform 0.2s ease, box-shadow 0.2s ease;
     }
-
-    .jur-card:hover {
-      transform: translateY(-3px);
-      box-shadow: 0 10px 25px rgba(0,0,0,0.12);
-    }
-
-    .jur-card h3 {
-      margin-bottom: 10px;
-      font-size: 18px;
-    }
-
-    .jur-card p {
-      margin: 4px 0;
-      font-size: 14px;
-    }
-
-    .jur-card .note {
-      font-size: 13px;
-      color: #555;
-      margin-top: 6px;
-    }
-
     button {
-      padding: 10px 16px;
+      padding: 10px 18px;
       border: none;
       border-radius: 8px;
       cursor: pointer;
@@ -75,12 +52,25 @@
       font-weight: 600;
       transition: background 0.2s;
     }
-
     button:hover { background: #00a6c5; }
     button.active { background: #7fc28f; }
 
-    .button-group { display: flex; gap: 10px; margin-bottom: 12px; }
+    /* Info card (integrated with panel) */
+    #details {
+      flex: none;
+      margin-bottom: 16px;
+      padding: 16px;
+      border-radius: 14px;
+      background: #fff;
+      box-shadow: 0 6px 18px rgba(0,0,0,0.08);
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+    #details:hover { transform: translateY(-2px); box-shadow: 0 10px 22px rgba(0,0,0,0.12); }
+    #details h3 { margin-bottom: 10px; font-size: 18px; }
+    #details p { margin: 4px 0; font-size: 14px; }
+    #details .note { font-size: 13px; color: #555; margin-top: 6px; }
 
+    /* Legend */
     .legend-item {
       display: flex;
       align-items: center;
@@ -88,10 +78,9 @@
       gap: 8px;
       font-size: 14px;
     }
-
     .swatch { width: 18px; height: 14px; border-radius: 3px; border: 1px solid #999; }
 
-    /* Modern comparison table */
+    /* Comparison table (integrated, scroll-free) */
     #compareArea table {
       border-collapse: separate;
       border-spacing: 0;
@@ -100,43 +89,25 @@
       width: 100%;
       box-shadow: 0 6px 16px rgba(0,0,0,0.08);
     }
-
     #compareArea th, #compareArea td {
       padding: 12px 10px;
       text-align: left;
       font-size: 13px;
     }
-
-    #compareArea th.blank {
-      background: #192543;
-      color: #fff;
-    }
-
-    #compareArea th.field {
-      background: #fff;
-      color: #192543;
-      font-weight: 600;
-    }
-
-    #compareArea td.country {
-      font-weight: bold;
-      color: #fff; /* White text for country names */
-    }
-
-    #compareArea tbody tr:nth-child(even) td:not(.country) {
-      background-color: #f9f9f9;
-    }
-
-    #compareArea tbody tr:hover td:not(.country) {
-      background-color: #e6f7f5;
-    }
-
-    #compareArea {
-      margin-top: 10px;
-      overflow-x: auto;
-    }
+    #compareArea th.blank { background: #192543; color: #fff; }
+    #compareArea th.field { background: #fff; color: #192543; font-weight: 600; }
+    #compareArea td.country { font-weight: bold; color: #fff; }
+    #compareArea tbody tr:nth-child(even) td:not(.country) { background-color: #f9f9f9; }
+    #compareArea tbody tr:hover td:not(.country) { background-color: #e6f7f5; }
+    #compareArea { margin-top: 10px; flex: none; }
 
     .hidden { display: none; }
+
+    /* Make details + comparison table visually integrated */
+    #panel > #details, #compareArea table {
+      border-radius: 14px;
+    }
+
   </style>
 </head>
 <body>
@@ -148,7 +119,7 @@
       <button id="toggleCompare">Compare Mode: OFF</button>
       <button id="clearAll">Clear</button>
     </div>
-    <div id="details" class="jur-card">Click a country to view details.</div>
+    <div id="details">Click a country to view details.</div>
     <div id="legend"></div>
     <h3 class="hidden" id="compareTitle">Comparison</h3>
     <div id="compareArea" class="hidden"></div>
@@ -162,16 +133,10 @@ const complianceData = {
   "Germany": { authority:"BfDI / State DPAs", law:"GDPR + BDSG", fines:"Up to €20M or 4%", transfers:"SCCs; state rules", note:"State-level variation" },
   "United Kingdom": { authority:"ICO", law:"UK GDPR + DPA 2018", fines:"Up to £17.5M or 4%", transfers:"UK SCCs", note:"Post-Brexit adequacy" }
 };
-
 const colors = ["#7fc28f","#07b0a0","#00a6c5","#ffd900","#4f9f35","#9b1e66"];
-let compareMode = false;
-let selected = {};
-let order = [];
-let current = null;
-let layerMap = {};
+let compareMode = false, selected = {}, order = [], current = null, layerMap = {};
 
 const map = L.map('map', { zoomControl:false, scrollWheelZoom:false, doubleClickZoom:false, dragging:true }).setView([25,10],2);
-
 function baseStyle(){ return { color:'#222', weight:1, fillColor:'#fdfdfd', fillOpacity:1 }; }
 function setColor(layer,color){ layer.setStyle({ fillColor:color, fillOpacity:1 }); layer.bringToFront(); }
 function resetColor(layer){ layer.setStyle(baseStyle()); }
@@ -188,7 +153,6 @@ fetch('countries.geojson')
       if(exclude.includes(name)) return false;
       return true;
     });
-
     L.geoJSON(data,{
       style:baseStyle,
       onEachFeature:(feature,layer)=>{
@@ -224,6 +188,7 @@ document.getElementById('toggleCompare').onclick=()=>{
 
   if(!compareMode) clearAll();
 };
+
 document.getElementById('clearAll').onclick=clearAll;
 
 function handleClick(name){
@@ -255,16 +220,14 @@ function handleClick(name){
 function showDetails(name){
   const d=complianceData[name];
   const el=document.getElementById('details');
-  if(!d){ el.innerHTML=`<div class="jur-card"><h3>${name}</h3><p>No data yet.</p></div>`; }
+  if(!d){ el.innerHTML=`<h3>${name}</h3><p>No data yet.</p>`; }
   else{
-    el.innerHTML=`<div class="jur-card">
-      <h3>${name}</h3>
+    el.innerHTML=`<h3>${name}</h3>
       <p><strong>Authority:</strong> ${d.authority}</p>
       <p><strong>Law:</strong> ${d.law}</p>
       <p><strong>Transfers:</strong> ${d.transfers}</p>
       <p><strong>Fines:</strong> ${d.fines}</p>
-      <p class="note">${d.note||''}</p>
-    </div>`;
+      <p class="note">${d.note||''}</p>`;
   }
 }
 
@@ -314,4 +277,3 @@ function clearAll(){
 </script>
 </body>
 </html>
-
