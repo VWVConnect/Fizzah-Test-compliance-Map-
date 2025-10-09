@@ -11,38 +11,76 @@
       font-family: 'system-ui', sans-serif;
       color: #192543;
     }
-    #app { display: flex; height: 100%; width: 100%; }
-    #map { flex: 1; cursor: pointer; }
+    #app {
+      display: flex;
+      height: 100%;
+      width: 100%;
+      border: 4px solid #192543;  /* App frame border */
+      box-sizing: border-box;
+    }
+    #map { flex: 1; cursor: pointer; background: #fff; } /* Map background white */
     #panel {
-      width: 380px; border-left: 1px solid #ddd; padding: 16px;
-      overflow-y: auto; background: #f9f9f9; display: flex; flex-direction: column;
+      width: 380px;
+      border-left: 1px solid #ddd;
+      padding: 16px;
+      overflow-y: auto;
+      background: #f9f9f9;
+      display: flex;
+      flex-direction: column;
     }
     h2, h3 { margin-top: 0; color: #192543; }
     .jur-card {
-      border-radius: 12px; padding: 12px; margin-bottom: 12px;
-      background: #fff; box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+      border-radius: 12px;
+      padding: 12px;
+      margin-bottom: 12px;
+      background: #fff;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
       transition: transform 0.2s;
     }
     .jur-card:hover { transform: translateY(-2px); }
     button {
-      padding: 10px 16px; border: none; border-radius: 8px;
-      cursor: pointer; background: #07b0a0; color: #fff; font-weight: 600;
+      padding: 10px 16px;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      background: #07b0a0;
+      color: #fff;
+      font-weight: 600;
       transition: background 0.2s;
     }
     button:hover { background: #00a6c5; }
     button.active { background: #7fc28f; }
     .button-group { display: flex; gap: 10px; margin-bottom: 12px; }
     .legend-item {
-      display: flex; align-items: center; margin: 6px 0; gap: 8px; font-size: 14px;
+      display: flex;
+      align-items: center;
+      margin: 6px 0;
+      gap: 8px;
+      font-size: 14px;
     }
     .swatch {
-      width: 18px; height: 14px; border-radius: 3px; border: 1px solid #999;
+      width: 18px;
+      height: 14px;
+      border-radius: 3px;
+      border: 1px solid #999;
     }
-    table { border-collapse: collapse; width: 100%; margin-top: 12px; background:#fff; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 4px rgba(0,0,0,0.08); }
-    th, td { border: 1px solid #ddd; padding: 8px; text-align: left; font-size: 13px; }
-    th { background: #07b0a0; color: #fff; }
+    table {
+      border-collapse: collapse;
+      width: 100%;
+      margin-top: 12px;
+      background: #fff;
+      border-radius: 8px;
+      overflow: hidden;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.08);
+    }
+    th, td {
+      border: 1px solid #ddd;
+      padding: 8px;
+      text-align: left;
+      font-size: 13px;
+    }
+    th { background: #07b0a0; color: #fff; } /* Header with white text */
     #compareArea { margin-top: 8px; }
-    /* Hide comparison area when not in compare mode */
     .hidden { display: none; }
   </style>
 </head>
@@ -58,7 +96,7 @@
     <div id="details" class="jur-card">Click a country to view details.</div>
     <div id="legend"></div>
     <h3 class="hidden" id="compareTitle">Comparison</h3>
-    <div id="compareArea" class="hidden">No jurisdictions selected.</div>
+    <div id="compareArea" class="hidden"></div>
   </div>
 </div>
 
@@ -167,12 +205,11 @@ function updateLegend(){
     const color=selected[n];
     el.innerHTML+=`<div class="legend-item"><div class="swatch" style="background:${color}"></div>${n}</div>`;
   });
-  if(order.length===0) el.innerHTML='<div style="color:#666;">No jurisdictions selected.</div>';
 }
 
 function renderCompare(){
   const el=document.getElementById('compareArea');
-  if(order.length===0){ el.textContent='No jurisdictions selected.'; return; }
+  if(order.length===0){ el.innerHTML=''; return; } // removed placeholder
   const fields=['authority','law','transfers','fines','note'];
   const labels={authority:'Authority',law:'Law',transfers:'Transfers',fines:'Fines',note:'Note'};
   let html='<table><thead><tr><th>Field</th>';
@@ -198,6 +235,5 @@ function clearAll(){
 </script>
 </body>
 </html>
-
 
 
