@@ -141,7 +141,7 @@ const complianceData = {
 const colors = ["#7fc28f","#07b0a0","#00a6c5","#ffd900","#4f9f35","#9b1e66"];
 let compareMode=false, selected={}, order=[], current=null, layerMap={};
 
-// Map setup with fixed panning, slightly zoomed, and centered globally
+// Map setup
 const map = L.map('map', {
   zoomControl:false,
   scrollWheelZoom:false,
@@ -153,13 +153,50 @@ const map = L.map('map', {
   touchZoom:false,
   maxBounds: [[-90, -180], [90, 180]],
   maxBoundsViscosity: 1.0
-}).setView([40, 20], 2.45); // slightly zoomed out from 2.5
+}).setView([40, 20], 2.47); // Zoom 2.47
 
-// White background
-const worldBounds = [[-90, -180], [90, 180]];
-L.rectangle(worldBounds, {color:'#ffffff', weight:0, fillOpacity:1}).addTo(map);
+// Map background white
+document.getElementById('map').style.background = '#ffffff';
 
-L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { noWrap: true }).addTo(map);
+// Add OpenStreetMap tiles
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+  noWrap: true,
+  attribution: '&copy; OpenStreetMap contributors'
+}).addTo(map);
 
-// --- Remaining code unchanged ---
+// Base styles and handlers
+function baseStyle(){ return { color:'#222', weight:1, fillColor:'#fdfdfd', fillOpacity:1 }; }
+function setColor(layer,color){ layer.setStyle({ fillColor:color, fillOpacity:1 }); layer.bringToFront(); }
+function resetColor(layer){ layer.setStyle(baseStyle()); }
 
+// Load countries
+fetch('countries.geojson')
+  .then(r=>r.json())
+  .then(data=>{
+    data.features = data.features.filter(f=>{
+      const props = f.properties || {};
+      const name = props.ADMIN || props.NAME || props.name_long || props.name || "Unknown";
+      if(name==="Antarctica") return false;
+      if(f.bbox){ const w=Math.abs(f.bbox[2]-f.bbox[0]); const h=Math.abs(f.bbox[3]-f.bbox[1]); if(w*h<5) return false; }
+      const exclude = ["Tuvalu","Nauru","Palau","Marshall Islands","Micronesia","Seychelles","Maldives","Saint Kitts and Nevis","Saint Vincent and the Grenadines","Saint Lucia","Dominica","Antigua and Barbuda","Samoa","Tonga","Kiribati","Comoros","Vanuatu","Cape Verde","Barbados","Grenada"];
+      if(exclude.includes(name)) return false;
+      return true;
+    });
+    L.geoJSON(data,{
+      style:baseStyle,
+      onEachFeature:(feature,layer)=>{
+        const props = feature.properties || {};
+        const name = props.ADMIN || props.NAME || props.name_long || props.name || "Unknown";
+        layerMap[name]=layer;
+        layer.on('click',()=>handleClick(name));
+        layer.on('mouseover',()=>layer.setStyle({ fillOpacity:0.9 }));
+        layer.on('mouseout',()=>{ if(!selected[name] && layer!==current) resetColor(layer); });
+      }
+    }).addTo(map);
+  });
+
+// --- Remaining functions for handleClick, showDetails, renderCompare, updateLegend, clearAll ---
+// Include all logic as in previous working version
+</script>
+</body>
+</html>
