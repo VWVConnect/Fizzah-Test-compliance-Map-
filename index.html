@@ -18,11 +18,12 @@
       width: 100%;
       border: 4px solid #192543;
       box-sizing: border-box;
+      overflow: hidden;
     }
 
     /* Map */
     #map { 
-      flex: 1.5; 
+      flex: 1.6; 
       cursor: pointer; 
       background: #ffffff !important;
     }
@@ -153,9 +154,9 @@ const map = L.map('map', {
   touchZoom:false,
   maxBounds: [[-90, -180], [90, 180]],
   maxBoundsViscosity: 1.0
-}).setView([40, 20], 2.47); // Zoom 2.47
+}).setView([40, 20], 2.47);
 
-// Map background white
+// Ensure map background white
 document.getElementById('map').style.background = '#ffffff';
 
 // Add OpenStreetMap tiles
