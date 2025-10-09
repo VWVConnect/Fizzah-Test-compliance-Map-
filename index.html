@@ -61,7 +61,7 @@
     /* Dropdown */
     #dropdownContainer { display: flex; justify-content: center; margin-bottom: 16px; }
     #jurisdictionSelect {
-      max-width: 320px;  /* widened for better fit */
+      max-width: 360px;  /* widened for long country names */
       width: 100%;
       border-radius: 12px;
       border: 2px solid #192543;
@@ -186,12 +186,10 @@ fetch('countries.geojson')
     }).addTo(map);
   });
 
-jurisdictionSelect.addEventListener('change', function(){
-  const name = this.value;
-  if(!name || !layerMap[name]) return;
-  handleClick(name);
-});
+// Dropdown
+jurisdictionSelect.addEventListener('change', function(){ const name = this.value; if(!name || !layerMap[name]) return; handleClick(name); });
 
+// Toggle
 document.getElementById('toggleCompare').addEventListener('change', function(){
   compareMode=this.checked;
   document.getElementById('compareArea').classList.toggle('hidden',!compareMode);
