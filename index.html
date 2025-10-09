@@ -105,9 +105,7 @@ fetch('countries.geojson')
 jurisdictionSelect.addEventListener('change', function(){
   const name = this.value;
   if(!name || !layerMap[name]) return;
-
-  // Force handleClick to respect comparison mode
-  handleClick(name);
+  handleClick(name); // always highlight
 });
 
 document.getElementById('toggleCompare').onclick=()=>{
@@ -145,16 +143,12 @@ function handleClick(name){
     if(current && current!==layer) resetColor(current); current=layer; setColor(layer,colors[0]); document.getElementById('details').classList.remove('hidden'); showDetails(name);
   }
 
+  // Always highlight on map, even if no info
+  Object.keys(selected).forEach(n=>{ if(layerMap[n]) setColor(layerMap[n], selected[n]); });
+  if(!compareMode && current) setColor(current, colors[0]);
+
   // Sync dropdown
   if(choicesInstance) choicesInstance.setChoiceByValue(name);
-
-  // Highlight all selected countries in comparison mode
-  Object.keys(selected).forEach(n=>{
-    if(layerMap[n]) setColor(layerMap[n], selected[n]);
-  });
-
-  // Highlight current in single mode
-  if(!compareMode && current) setColor(current, colors[0]);
 
   updateLegend();
   if(compareMode) renderCompare();
@@ -185,3 +179,4 @@ function clearAll(){ Object.keys(selected).forEach(n=>resetColor(layerMap[n])); 
 </script>
 </body>
 </html>
+
