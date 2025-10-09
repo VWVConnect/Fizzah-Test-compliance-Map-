@@ -28,7 +28,7 @@
       background: #ffffff !important;
     }
 
-    /* Panel width */
+    /* Panel */
     #panel {
       width: 480px;
       min-width: 420px;
@@ -37,6 +37,8 @@
       flex-direction: column;
       padding: 20px;
       box-sizing: border-box;
+      position: relative;
+      z-index: 10; /* ensures buttons clickable above map */
     }
 
     h2, h3 { margin-top: 0; color: #192543; text-align: center; }
@@ -156,13 +158,14 @@ const map = L.map('map', {
   maxBoundsViscosity: 1.0
 }).setView([40, 20], 2.47);
 
-// Ensure map background white
+// Set map container background white
 document.getElementById('map').style.background = '#ffffff';
 
-// Add OpenStreetMap tiles
-L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-  noWrap: true,
-  attribution: '&copy; OpenStreetMap contributors'
+// Use a white/light tile layer (Carto)
+L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+    attribution: '&copy; <a href="https://www.openstreetmap.org/">OpenStreetMap</a> &copy; <a href="https://carto.com/">CARTO</a>',
+    subdomains: 'abcd',
+    maxZoom: 19
 }).addTo(map);
 
 // Base styles and handlers
@@ -196,8 +199,7 @@ fetch('countries.geojson')
     }).addTo(map);
   });
 
-// --- Remaining functions for handleClick, showDetails, renderCompare, updateLegend, clearAll ---
-// Include all logic as in previous working version
+// --- Remaining functions (handleClick, showDetails, renderCompare, updateLegend, clearAll) ---
 </script>
 </body>
 </html>
