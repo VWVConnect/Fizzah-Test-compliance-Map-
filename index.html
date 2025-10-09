@@ -26,7 +26,7 @@
     /* Info wording */
     #infoText { font-size:14px; color:#555; text-align:center; margin-bottom:12px; }
 
-    #details { flex:none; margin-bottom:16px; padding:16px; border-radius:14px; background:#fff; box-shadow:0 6px 18px rgba(0,0,0,0.08); transition:none; }
+    #details { flex:none; margin-bottom:16px; padding:16px; border-radius:14px; background:#fff; box-shadow:0 6px 18px rgba(0,0,0,0.08); transition:none; display:none; }
     #details h3 { margin-bottom:10px; font-size:18px; }
     #details p { margin:4px 0; font-size:14px; }
     #details .note { font-size:13px; color:#555; margin-top:6px; }
@@ -43,7 +43,7 @@
     #compareArea tbody tr:nth-child(even) td:not(.country) { background-color:#f9f9f9; }
     #compareArea tbody tr:hover td:not(.country) { background-color:#e6f7f5; }
 
-    #jurisdictionSelect { margin-bottom:12px; border-radius:8px; padding:8px; border:1px solid #ccc; width:100%; }
+    #jurisdictionSelect { margin-bottom:12px; border-radius:8px; padding:8px; border:1px solid #ccc; width:100%; box-sizing:border-box; }
     .choices__inner { border-radius:8px !important; border:1px solid #ccc !important; padding:8px 12px !important; background:#fff !important; font-size:14px !important; color:#192543 !important; box-shadow:0 4px 12px rgba(0,0,0,0.08); transition:border 0.2s,box-shadow 0.2s; }
     .choices__inner:focus-within { border-color:#07b0a0 !important; box-shadow:0 6px 16px rgba(0,176,160,0.3); }
     .choices__list--dropdown { border-radius:8px !important; background:#fff !important; box-shadow:0 8px 20px rgba(0,0,0,0.12); }
@@ -77,7 +77,7 @@
 
     <button id="clearAll">Clear</button>
 
-    <div id="details">Click a country to view details.</div>
+    <div id="details"></div>
     <div id="legend"></div>
   </div>
 </div>
@@ -146,8 +146,8 @@ toggleInput.addEventListener('change', function(){
       const color=colors.find(c=>!Object.values(selected).includes(c))||colors[0];
       selected[name]=color; order.push(name); setColor(current,color);
     }
-    document.getElementById('details').classList.add('hidden'); updateLegend(); renderCompare();
-  } else { document.getElementById('details').classList.remove('hidden'); }
+    document.getElementById('details').style.display='none'; updateLegend(); renderCompare();
+  } else { document.getElementById('details').style.display='none'; }
   if(!compareMode) clearAll();
 });
 
@@ -159,9 +159,9 @@ function handleClick(name){
   if(compareMode){
     if(selected[name]){ delete selected[name]; order=order.filter(n=>n!==name); resetColor(layer); }
     else{ const color=colors.find(c=>!Object.values(selected).includes(c))||colors[0]; selected[name]=color; order.push(name); setColor(layer,color); }
-    document.getElementById('details').classList.add('hidden');
+    document.getElementById('details').style.display='none';
   } else {
-    if(current && current!==layer) resetColor(current); current=layer; setColor(layer,colors[0]); document.getElementById('details').classList.remove('hidden'); showDetails(name);
+    if(current && current!==layer) resetColor(current); current=layer; setColor(layer,colors[0]); document.getElementById('details').style.display='block'; showDetails(name);
   }
 
   Object.keys(selected).forEach(n=>{ if(layerMap[n]) setColor(layerMap[n], selected[n]); });
@@ -188,7 +188,7 @@ function renderCompare(){
   html+='</tbody></table>'; el.innerHTML=html;
 }
 
-function clearAll(){ Object.keys(selected).forEach(n=>resetColor(layerMap[n])); selected={}; order=[]; if(current){ resetColor(current); current=null;} updateLegend(); renderCompare(); document.getElementById('details').textContent='Click a country to view details.'; document.getElementById('details').classList.remove('hidden'); if(choicesInstance) choicesInstance.removeActiveItems(); }
+function clearAll(){ Object.keys(selected).forEach(n=>resetColor(layerMap[n])); selected={}; order=[]; if(current){ resetColor(current); current=null;} updateLegend(); renderCompare(); if(choicesInstance) choicesInstance.removeActiveItems(); }
 </script>
 </body>
 </html>
