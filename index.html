@@ -15,10 +15,10 @@
       display: flex;
       height: 100%;
       width: 100%;
-      border: 4px solid #192543;  /* App frame border */
+      border: 4px solid #192543;
       box-sizing: border-box;
     }
-    #map { flex: 1; cursor: pointer; background: #fff; } /* Map background white */
+    #map { flex: 1; cursor: pointer; background: #fff; }
     #panel {
       width: 380px;
       border-left: 1px solid #ddd;
@@ -58,12 +58,7 @@
       gap: 8px;
       font-size: 14px;
     }
-    .swatch {
-      width: 18px;
-      height: 14px;
-      border-radius: 3px;
-      border: 1px solid #999;
-    }
+    .swatch { width: 18px; height: 14px; border-radius: 3px; border: 1px solid #999; }
     table {
       border-collapse: collapse;
       width: 100%;
@@ -79,7 +74,7 @@
       text-align: left;
       font-size: 13px;
     }
-    th { background: #07b0a0; color: #fff; } /* Header with white text */
+    th:first-child { background: #07b0a0; color: #fff; } /* First header cell */
     #compareArea { margin-top: 8px; }
     .hidden { display: none; }
   </style>
@@ -107,6 +102,7 @@ const complianceData = {
   "Germany": { authority:"BfDI / State DPAs", law:"GDPR + BDSG", fines:"Up to €20M or 4%", transfers:"SCCs; state rules", note:"State-level variation" },
   "United Kingdom": { authority:"ICO", law:"UK GDPR + DPA 2018", fines:"Up to £17.5M or 4%", transfers:"UK SCCs", note:"Post-Brexit adequacy" }
 };
+
 const colors = ["#7fc28f","#07b0a0","#00a6c5","#ffd900","#4f9f35","#9b1e66"];
 let compareMode = false;
 let selected = {};
@@ -115,6 +111,7 @@ let current = null;
 let layerMap = {};
 
 const map = L.map('map', { zoomControl:false, scrollWheelZoom:false, doubleClickZoom:false, dragging:true }).setView([25,10],2);
+
 function baseStyle(){ return { color:'#222', weight:1, fillColor:'#fdfdfd', fillOpacity:1 }; }
 function setColor(layer,color){ layer.setStyle({ fillColor:color, fillOpacity:1 }); layer.bringToFront(); }
 function resetColor(layer){ layer.setStyle(baseStyle()); }
@@ -152,6 +149,20 @@ document.getElementById('toggleCompare').onclick=()=>{
   btn.classList.toggle('active',compareMode);
   document.getElementById('compareArea').classList.toggle('hidden',!compareMode);
   document.getElementById('compareTitle').classList.toggle('hidden',!compareMode);
+
+  // Include the currently selected country if any when enabling compare
+  if(compareMode && current){
+    const name = Object.keys(layerMap).find(n => layerMap[n]===current);
+    if(name && !selected[name]){
+      const color = colors.find(c => !Object.values(selected).includes(c)) || colors[0];
+      selected[name] = color;
+      order.push(name);
+      setColor(current,color);
+    }
+    updateLegend();
+    renderCompare();
+  }
+
   if(!compareMode) clearAll();
 };
 document.getElementById('clearAll').onclick=clearAll;
@@ -159,6 +170,7 @@ document.getElementById('clearAll').onclick=clearAll;
 function handleClick(name){
   const layer=layerMap[name];
   if(!layer) return;
+
   if(compareMode){
     if(selected[name]){
       delete selected[name];
@@ -166,8 +178,7 @@ function handleClick(name){
       resetColor(layer);
     } else {
       const used=new Set(Object.values(selected));
-      const color=colors.find(c=>!used.has(c));
-      if(!color) return alert('Max comparisons reached.');
+      const color=colors.find(c=>!used.has(c)) || colors[0];
       selected[name]=color;
       order.push(name);
       setColor(layer,color);
@@ -209,11 +220,11 @@ function updateLegend(){
 
 function renderCompare(){
   const el=document.getElementById('compareArea');
-  if(order.length===0){ el.innerHTML=''; return; } // removed placeholder
+  if(order.length===0){ el.innerHTML=''; return; }
   const fields=['authority','law','transfers','fines','note'];
   const labels={authority:'Authority',law:'Law',transfers:'Transfers',fines:'Fines',note:'Note'};
   let html='<table><thead><tr><th>Field</th>';
-  order.forEach(n=>html+=`<th style="color:${selected[n]}">${n}</th>`);
+  order.forEach(n=>html+=`<th style="background:${selected[n]}; color:#fff">${n}</th>`); // country headers colored
   html+='</tr></thead><tbody>';
   fields.forEach(f=>{
     html+=`<tr><td><b>${labels[f]}</b></td>`;
