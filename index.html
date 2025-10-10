@@ -4,107 +4,87 @@ const colors = ["#7fc28f","#07b0a0","#00a6c5","#ffd900","#4f9f35","#9b1e66"];
 let complianceData = {};
 let layerMap={}, selected={}, order=[], current=null, compareMode=false;
 
+// 🔹 Load World Bank data (Internet users %)
 async function loadLiveData() {
-  const indicator = "NY.GDP.MKTP.CD"; // GDP (current US$)
-  let page = 1, pages = 1;
-  let allRecords = [];
-
-  console.log("Loading live data...");
+  const indicator = "IT.NET.USER.ZS";
+  let page = 1, pages = 1, all = [];
   while (page <= pages) {
-    const url = `https://api.worldbank.org/v2/country/all/indicator/${indicator}?format=json&per_page=1000&page=${page}`;
-    const res = await fetch(url);
+    const res = await fetch(`https://api.worldbank.org/v2/country/all/indicator/${indicator}?format=json&per_page=1000&page=${page}`);
     const json = await res.json();
-    if (!json || !json[1]) break;
+    if (!json[1]) break;
     pages = json[0].pages;
-    allRecords = allRecords.concat(json[1]);
+    all = all.concat(json[1]);
     page++;
   }
-
-  allRecords.forEach(item => {
-    const country = item.country?.value;
-    const value = item.value;
-    if (!country || value == null) return;
-    complianceData[country] = {
+  all.forEach(d => {
+    const c = d.country?.value;
+    const v = d.value;
+    if (!c || v == null) return;
+    complianceData[c] = {
       authority: "—",
       law: "—",
       transfers: "—",
       fines: "—",
-      note: `GDP (current US$): $${Number(value).toLocaleString()}`
+      note: `Internet users: ${v.toFixed(1)}%`
     };
   });
-
   console.log("✅ Loaded data for", Object.keys(complianceData).length, "countries");
 }
 
+// 🔹 Map color logic
 function getColorByValue(v) {
-  if (v > 1e12) return colors[5];
-  if (v > 1e11) return colors[4];
-  if (v > 1e10) return colors[2];
-  if (v > 1e9) return colors[1];
-  if (v > 1e8) return colors[0];
+  if (v > 90) return colors[5];
+  if (v > 70) return colors[4];
+  if (v > 50) return colors[2];
+  if (v > 30) return colors[1];
+  if (v > 10) return colors[0];
   return colors[3];
 }
 
-function extractGDP(name){
+function extractValue(name){
   const note = complianceData[name]?.note || '';
-  const match = note.match(/\$([\d,]+)/);
-  if (!match) return 0;
-  return parseFloat(match[1].replace(/,/g,''));
+  const match = note.match(/([\d.]+)/);
+  return match ? parseFloat(match[1]) : 0;
 }
 
+// 🔹 Initialize map and UI
 window.addEventListener("load", async () => {
+  const map = L.map('map', { zoomControl:false }).setView([20,0], 2);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+
   await loadLiveData();
-
-  const map = L.map('map', {
-    zoomControl: false,
-    scrollWheelZoom: false,
-    doubleClickZoom: false,
-    dragging: false
-  }).setView([20, 0], 2);
-
-  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { noWrap:true }).addTo(map);
 
   const jurisdictionSelect = document.getElementById('jurisdictionSelect');
 
-  function baseStyle(){ return {color:'#222', weight:1, fillColor:'#fdfdfd', fillOpacity:1}; }
-  function setColor(layer,color){ layer.setStyle({fillColor:color, fillOpacity:1, color:'#192543', weight:1}); }
-  function resetColor(layer){ layer.setStyle(baseStyle()); }
+  // Load your GitHub-hosted GeoJSON
+  const geo = await fetch('https://vwvconnect.github.io/Fizzah-Test-compliance-Map-/countries.geojson').then(r=>r.json());
+  geo.features = geo.features.filter(f=>f.properties.ADMIN !== "Antarctica").sort((a,b)=>a.properties.ADMIN.localeCompare(b.properties.ADMIN));
 
-  fetch('https://raw.githubusercontent.com/johan/world.geo.json/master/countries.geo.json')
-    .then(r=>r.json())
-    .then(data=>{
-      data.features = data.features.filter(f=>f.properties.name!=="Antarctica");
-      data.features.sort((a,b)=>a.properties.name.localeCompare(b.properties.name));
+  // Populate dropdown
+  geo.features.forEach(f=>{
+    const name=f.properties.ADMIN;
+    const opt=document.createElement('option');
+    opt.value=name; opt.textContent=name;
+    jurisdictionSelect.appendChild(opt);
+  });
 
-      // populate dropdown
-      data.features.forEach(f=>{
-        const name=f.properties.name;
-        const opt=document.createElement('option');
-        opt.value=name;
-        opt.textContent=name;
-        jurisdictionSelect.appendChild(opt);
-      });
+  // Draw countries
+  L.geoJSON(geo, {
+    style: f=>{
+      const name=f.properties.ADMIN;
+      const val=extractValue(name);
+      return {color:'#192543', weight:1, fillColor:getColorByValue(val), fillOpacity:0.9};
+    },
+    onEachFeature:(f,layer)=>{
+      const name=f.properties.ADMIN;
+      layerMap[name]=layer;
+      layer.on('click',()=>handleClick(name));
+    }
+  }).addTo(map);
 
-      // draw countries
-      L.geoJSON(data, {
-        style: feature=>{
-          const name=feature.properties.name;
-          const val=extractGDP(name);
-          const color=getColorByValue(val);
-          return {color:'#192543', weight:1, fillColor:color, fillOpacity:0.9};
-        },
-        onEachFeature:(feature,layer)=>{
-          const name=feature.properties.name;
-          layerMap[name]=layer;
-          layer.on('click',()=>handleClick(name));
-        }
-      }).addTo(map);
-    });
-
-  jurisdictionSelect.addEventListener('change', function(){
-    const name=this.value;
-    if(!name || !layerMap[name]) return;
-    handleClick(name);
+  jurisdictionSelect.addEventListener('change', e=>{
+    const n=e.target.value;
+    if(n && layerMap[n]) handleClick(n);
   });
 
   document.getElementById('toggleCompare').addEventListener('change', function(){
@@ -123,23 +103,23 @@ window.addEventListener("load", async () => {
   document.getElementById('clearAll').onclick=clearAll;
 
   function addToSelection(name){
-    const value=extractGDP(name);
-    const color=getColorByValue(value);
+    const val = extractValue(name);
+    const color = getColorByValue(val);
     selected[name]=color; order.push(name);
-    setColor(layerMap[name],color);
+    layerMap[name].setStyle({fillColor:color});
   }
 
   function handleClick(name){
     const layer=layerMap[name]; if(!layer) return;
-    const value=extractGDP(name);
-    const color=getColorByValue(value);
+    const val=extractValue(name); const color=getColorByValue(val);
     if(compareMode){
-      if(selected[name]){ delete selected[name]; order=order.filter(n=>n!==name); resetColor(layer);}
-      else{ addToSelection(name); }
+      if(selected[name]){ delete selected[name]; order=order.filter(n=>n!==name); layer.setStyle({fillColor:getColorByValue(val)}); }
+      else addToSelection(name);
       document.getElementById('details').classList.add('hidden');
     } else {
-      if(current && current!==layer) resetColor(current);
-      current=layer; setColor(layer,color);
+      if(current && current!==layer) current.setStyle({fillColor:getColorByValue(extractValue(Object.keys(layerMap).find(k=>layerMap[k]===current)))});
+      current=layer;
+      layer.setStyle({fillColor:color});
       document.getElementById('details').classList.remove('hidden');
       showDetails(name);
     }
@@ -150,16 +130,12 @@ window.addEventListener("load", async () => {
   function showDetails(name){
     const d=complianceData[name];
     const el=document.getElementById('details');
-    if(!d){
-      el.innerHTML=`<h3>${name}</h3><p>No live data available.</p>`;
-    } else {
-      el.innerHTML=`<h3>${name}</h3>
-        <p><strong>Authority:</strong> ${d.authority}</p>
-        <p><strong>Law:</strong> ${d.law}</p>
-        <p><strong>Transfers:</strong> ${d.transfers}</p>
-        <p><strong>Fines:</strong> ${d.fines}</p>
-        <p class="note">${d.note}</p>`;
-    }
+    el.innerHTML=d ? `<h3>${name}</h3>
+       <p><strong>Authority:</strong> ${d.authority}</p>
+       <p><strong>Law:</strong> ${d.law}</p>
+       <p><strong>Transfers:</strong> ${d.transfers}</p>
+       <p><strong>Fines:</strong> ${d.fines}</p>
+       <p class="note">${d.note}</p>` : `<h3>${name}</h3><p>No data available.</p>`;
   }
 
   function renderCompare(){
@@ -170,13 +146,10 @@ window.addEventListener("load", async () => {
     let html='<table><thead><tr><th class="blank"></th>';
     fields.forEach(f=>html+=`<th class="field">${labels[f]}</th>`);
     html+='</tr></thead><tbody>';
-    order.forEach(country=>{
-      const color=selected[country];
-      html+=`<tr><td class="country" style="background:${color}">${country}</td>`;
-      fields.forEach(f=>{
-        const value=complianceData[country]?.[f] || '';
-        html+=`<td>${value}</td>`;
-      });
+    order.forEach(c=>{
+      const color=selected[c];
+      html+=`<tr><td class="country" style="background:${color}">${c}</td>`;
+      fields.forEach(f=>html+=`<td>${complianceData[c]?.[f]||''}</td>`);
       html+='</tr>';
     });
     html+='</tbody></table>';
@@ -184,8 +157,11 @@ window.addEventListener("load", async () => {
   }
 
   function clearAll(){
-    Object.keys(selected).forEach(n=>resetColor(layerMap[n]));
-    selected={}; order=[]; if(current){ resetColor(current); current=null; }
+    Object.keys(selected).forEach(n=>{
+      const val=extractValue(n);
+      layerMap[n].setStyle({fillColor:getColorByValue(val)});
+    });
+    selected={}; order=[]; if(current){ current=null; }
     renderCompare();
     document.getElementById('details').textContent='Select a country to view details.';
     jurisdictionSelect.value='';
