@@ -5,153 +5,47 @@
 <title>GDPR Compliance Map</title>
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin=""/>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.239/pdf.min.js"></script>
 <style>
-html, body {
-  height: 100%;
-  margin: 0;
-  font-family: 'system-ui', sans-serif;
-  color: #192543;
-  background: #fff;
-}
-
-#app {
-  display: flex;
-  height: 100%;
-  width: 100%;
-  border: 4px solid #192543;
-  box-sizing: border-box;
-}
-
-#map {
-  flex: 1.5;
-  background: #ffffff;
-  cursor: pointer;
-  height: 100%;
-}
-
-#panel {
-  width: 480px;
-  min-width: 420px;
-  background: #f5f7f9;
-  display: flex;
-  flex-direction: column;
-  padding: 20px;
-  box-sizing: border-box;
-  position: relative;
-  overflow: hidden;
-}
-
-#panelContent {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-}
-
+html, body { height: 100%; margin: 0; font-family: 'system-ui', sans-serif; color: #192543; background: #fff; }
+#app { display: flex; height: 100%; width: 100%; border: 4px solid #192543; box-sizing: border-box; }
+#map { flex: 1.5; background: #ffffff; cursor: pointer; height: 100%; }
+#panel { width: 480px; min-width: 420px; background: #f5f7f9; display: flex; flex-direction: column; padding: 20px; box-sizing: border-box; position: relative; overflow: hidden; }
+#panelContent { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
 h2 { text-align: center; margin-top: 0; }
 .hidden { display: none; }
-
-/* Toggle Switch */
 .toggle-container { display: flex; align-items: center; justify-content: center; margin-bottom: 12px; gap: 12px; }
 .toggle-label { font-weight: 600; font-size: 14px; }
 .switch { position: relative; display: inline-block; width: 60px; height: 28px; }
 .switch input { display: none; }
-.slider {
-  position: absolute;
-  cursor: pointer;
-  top: 0; left: 0; right: 0; bottom: 0;
-  background-color: #fff;
-  border: 2px solid #192543;
-  border-radius: 34px;
-  transition: 0.3s;
-}
-.slider:before {
-  position: absolute;
-  content: "";
-  height: 22px;
-  width: 22px;
-  left: 2px;
-  bottom: 2px;
-  background-color: #192543;
-  border-radius: 50%;
-  transition: 0.3s;
-}
+.slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #fff; border: 2px solid #192543; border-radius: 34px; transition: 0.3s; }
+.slider:before { position: absolute; content: ""; height: 22px; width: 22px; left: 2px; bottom: 2px; background-color: #192543; border-radius: 50%; transition: 0.3s; }
 input:checked + .slider { background-color: #07b0a0; }
 input:checked + .slider:before { transform: translateX(32px); }
-
-/* Dropdown */
 #dropdownContainer { display: flex; justify-content: center; margin-bottom: 16px; }
-#jurisdictionSelect {
-  width: 90%;
-  max-width: 420px;
-  border-radius: 12px;
-  border: 2px solid #192543;
-  padding: 8px 12px;
-  font-size: 14px;
-  background: #fff;
-  color: #192543;
-}
-
-/* Buttons */
-#clearAll {
-  padding: 10px 18px;
-  border: none;
-  border-radius: 8px;
-  cursor: pointer;
-  background: #07b0a0;
-  color: #fff;
-  font-weight: 600;
-  flex-shrink: 0;
-  margin-top: 10px;
-}
+#jurisdictionSelect { width: 90%; max-width: 420px; border-radius: 12px; border: 2px solid #192543; padding: 8px 12px; font-size: 14px; background: #fff; color: #192543; }
+#clearAll { padding: 10px 18px; border: none; border-radius: 8px; cursor: pointer; background: #07b0a0; color: #fff; font-weight: 600; flex-shrink: 0; margin-top: 10px; }
 #clearAll:hover { background: #00a6c5; }
-
-/* Info card */
 #details { flex: none; margin-bottom: 16px; padding: 16px; border-radius: 14px; background: #fff; box-shadow: 0 6px 18px rgba(0,0,0,0.08); }
 #details h3 { margin-bottom: 10px; font-size: 18px; }
 #details p { margin: 4px 0; font-size: 14px; }
 #details .note { font-size: 13px; color: #555; margin-top: 6px; }
-
-/* Comparison area */
-#compareArea {
-  flex: 1; /* grows to fill remaining space */
-  overflow-y: auto; /* vertical scroll if content exceeds space */
-  overflow-x: hidden;
-  margin-top: 10px;
-}
-
-/* Table */
-#compareArea table {
-  border-collapse: separate;
-  border-spacing: 0;
-  border-radius: 12px;
-  overflow: hidden;
-  width: 100%;
-  box-shadow: 0 6px 16px rgba(0,0,0,0.08);
-  table-layout: fixed; /* keeps header width fixed */
-}
-#compareArea th, #compareArea td {
-  padding: 12px 10px;
-  text-align: left;
-  font-size: 13px;
-  word-break: break-word;
-}
+#compareArea { flex: 1; overflow-y: auto; overflow-x: hidden; margin-top: 10px; }
+#compareArea table { border-collapse: separate; border-spacing: 0; border-radius: 12px; overflow: hidden; width: 100%; box-shadow: 0 6px 16px rgba(0,0,0,0.08); table-layout: fixed; }
+#compareArea th, #compareArea td { padding: 12px 10px; text-align: left; font-size: 13px; word-break: break-word; }
 #compareArea th.blank { background: #192543; color: #fff; }
 #compareArea th.field { background: #fff; color: #192543; font-weight: 600; white-space: nowrap; }
 #compareArea td.country { font-weight: bold; color: #fff; text-align: center; }
 #compareArea tbody tr:nth-child(even) td:not(.country) { background-color: #f9f9f9; }
 #compareArea tbody tr:hover td:not(.country) { background-color: #e6f7f5; }
-
 </style>
 </head>
 <body>
 <div id="app">
   <div id="map"></div>
-
   <div id="panel">
     <div id="panelContent">
       <h2>GDPR Compliance Map</h2>
-
       <div class="toggle-container">
         <span class="toggle-label">Comparison Mode</span>
         <label class="switch">
@@ -159,78 +53,86 @@ input:checked + .slider:before { transform: translateX(32px); }
           <span class="slider"></span>
         </label>
       </div>
-
-      <p style="text-align:center; font-size:14px; margin-bottom:12px;">
-        Click a country on the map or pick a country from the dropdown
-      </p>
-
+      <p style="text-align:center; font-size:14px; margin-bottom:12px;">Click a country on the map or pick a country from the dropdown</p>
       <div id="dropdownContainer">
-        <select id="jurisdictionSelect">
-          <option value="" disabled selected>Select a country</option>
-        </select>
+        <select id="jurisdictionSelect"><option value="" disabled selected>Select a country</option></select>
       </div>
-
       <div id="details">Select a country to view details.</div>
-
       <h3 class="hidden" id="compareTitle">Comparison</h3>
       <div id="compareArea" class="hidden"></div>
     </div>
-
     <button id="clearAll">Clear</button>
   </div>
 </div>
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin></script>
 <script>
-const complianceData = {
-  "France": { authority:"CNIL", law:"GDPR + French Data Protection Act", fines:"Up to €20M or 4%", transfers:"SCCs, adequacy", note:"Strong enforcement history" },
-  "Germany": { authority:"BfDI / State DPAs", law:"GDPR + BDSG", fines:"Up to €20M or 4%", transfers:"SCCs; state rules", note:"State-level variation" },
-  "United Kingdom": { authority:"ICO", law:"UK GDPR + DPA 2018", fines:"Up to £17.5M or 4%", transfers:"UK SCCs", note:"Post-Brexit adequacy" }
-};
-
 const colors = ["#7fc28f","#07b0a0","#00a6c5","#ffd900","#4f9f35","#9b1e66"];
-let compareMode=false, selected={}, order=[], current=null, layerMap={};
+let compareMode=false, selected={}, order=[], current=null, layerMap={}, complianceData={};
 
-window.addEventListener("load", () => {
-  const map = L.map('map', {
-    zoomControl: false,
-    scrollWheelZoom: false,
-    doubleClickZoom: false,
-    dragging: false
-  }).setView([50, 20], 1.5);
+const pdfUrl = 'https://raw.githubusercontent.com/VWVConnect/Fizzah-Test-compliance-Map-/main/DLA_GDPR.pdf';
 
-  L.rectangle([[-90,-180],[90,180]], { color:'#ffffff', weight:0, fillOpacity:1 }).addTo(map);
-  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { noWrap:true }).addTo(map);
+async function loadComplianceData() {
+  const arrayBuffer = await fetch(pdfUrl).then(r=>r.arrayBuffer());
+  const pdf = await pdfjsLib.getDocument(arrayBuffer).promise;
 
-  function baseStyle(){ return {color:'#222', weight:1, fillColor:'#fdfdfd', fillOpacity:1}; }
-  function setColor(layer,color){ layer.setStyle({fillColor:color, fillOpacity:1, color:'#192543', weight:1.5}); }
-  function resetColor(layer){ layer.setStyle(baseStyle()); }
+  for(let i=1;i<=pdf.numPages;i++){
+    const page = await pdf.getPage(i);
+    const textContent = await page.getTextContent();
+    const pageText = textContent.items.map(item=>item.str).join(' ');
+    const lines = pageText.split(/(?=[A-Z\s]{2,30}\s)/);
+    lines.forEach(line=>{
+      const countryMatch = line.match(/^([A-Z\s]{2,30})/);
+      if(countryMatch){
+        const country = countryMatch[1].trim();
+        complianceData[country]={authority:'',law:'',fines:'',transfers:'',note:''};
+        const authorityMatch=line.match(/authority[:\-]?\s*([^.;]+)/i);
+        const lawMatch=line.match(/law[:\-]?\s*([^.;]+)/i);
+        const finesMatch=line.match(/fine[:\-]?\s*([^.;]+)/i);
+        const transfersMatch=line.match(/transfer[:\-]?\s*([^.;]+)/i);
+        const noteMatch=line.match(/note[:\-]?\s*([^.;]+)/i);
+        if(authorityMatch) complianceData[country].authority=authorityMatch[1].trim();
+        if(lawMatch) complianceData[country].law=lawMatch[1].trim();
+        if(finesMatch) complianceData[country].fines=finesMatch[1].trim();
+        if(transfersMatch) complianceData[country].transfers=transfersMatch[1].trim();
+        if(noteMatch) complianceData[country].note=noteMatch[1].trim();
+      }
+    });
+  }
+  console.log('Compliance Data Loaded:', complianceData);
+  initializeMap();
+}
 
-  const jurisdictionSelect = document.getElementById('jurisdictionSelect');
+function initializeMap(){
+  const map = L.map('map',{zoomControl:false,scrollWheelZoom:false,doubleClickZoom:false,dragging:false}).setView([50,20],1.5);
+  L.rectangle([[-90,-180],[90,180]],{color:'#ffffff',weight:0,fillOpacity:1}).addTo(map);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{noWrap:true}).addTo(map);
+
+  function baseStyle(){return {color:'#222',weight:1,fillColor:'#fdfdfd',fillOpacity:1};}
+  function setColor(layer,color){layer.setStyle({fillColor:color,fillOpacity:1,color:'#192543',weight:1.5});}
+  function resetColor(layer){layer.setStyle(baseStyle());}
+
+  const jurisdictionSelect=document.getElementById('jurisdictionSelect');
 
   fetch('countries.geojson')
     .then(r=>r.json())
     .then(data=>{
-      data.features = data.features.filter(f=>{
+      data.features=data.features.filter(f=>{
         const name=f.properties.ADMIN||f.properties.NAME||f.properties.name_long||f.properties.name||"Unknown";
         return name!=="Antarctica";
       });
-
       data.features.sort((a,b)=>{
         const nameA=(a.properties.ADMIN||a.properties.NAME||a.properties.name_long||a.properties.name||"").toUpperCase();
         const nameB=(b.properties.ADMIN||b.properties.NAME||b.properties.name_long||b.properties.name||"").toUpperCase();
         return nameA.localeCompare(nameB);
       });
-
       data.features.forEach(f=>{
         const name=f.properties.ADMIN||f.properties.NAME||f.properties.name_long||f.properties.name||"Unknown";
         const option=document.createElement('option');
-        option.value=name;
-        option.textContent=name;
+        option.value=name; option.textContent=name;
         jurisdictionSelect.appendChild(option);
       });
-
-      L.geoJSON(data, {
+      L.geoJSON(data,{
         style: baseStyle,
         onEachFeature:(feature,layer)=>{
           const name=feature.properties.ADMIN||feature.properties.NAME||feature.properties.name_long||feature.properties.name||"Unknown";
@@ -262,9 +164,8 @@ window.addEventListener("load", () => {
   document.getElementById('clearAll').onclick=clearAll;
 
   function addToSelection(name){
-    const color = colors[order.length % colors.length];
-    selected[name]=color; order.push(name);
-    setColor(layerMap[name],color);
+    const color=colors[order.length % colors.length];
+    selected[name]=color; order.push(name); setColor(layerMap[name],color);
   }
 
   function handleClick(name){
@@ -284,18 +185,15 @@ window.addEventListener("load", () => {
   }
 
   function showDetails(name){
-    const d=complianceData[name];
+    const d=complianceData[name] || {};
     const el=document.getElementById('details');
-    if(!d){
-      el.innerHTML=`<h3>${name}</h3><p>No data yet.</p>`;
-    } else {
-      el.innerHTML=`<h3>${name}</h3>
-        <p><strong>Authority:</strong> ${d.authority}</p>
-        <p><strong>Law:</strong> ${d.law}</p>
-        <p><strong>Transfers:</strong> ${d.transfers}</p>
-        <p><strong>Fines:</strong> ${d.fines}</p>
-        <p class="note">${d.note||''}</p>`;
-    }
+    if(!d || Object.keys(d).length===0){ el.innerHTML=`<h3>${name}</h3><p>No data yet.</p>`; }
+    else{ el.innerHTML=`<h3>${name}</h3>
+      <p><strong>Authority:</strong> ${d.authority||''}</p>
+      <p><strong>Law:</strong> ${d.law||''}</p>
+      <p><strong>Transfers:</strong> ${d.transfers||''}</p>
+      <p><strong>Fines:</strong> ${d.fines||''}</p>
+      <p class="note">${d.note||''}</p>`;}
   }
 
   function renderCompare(){
@@ -310,7 +208,7 @@ window.addEventListener("load", () => {
       const color=selected[country];
       html+=`<tr><td class="country" style="background:${color}">${country}</td>`;
       fields.forEach(f=>{
-        const value=complianceData[country]&&complianceData[country][f]?complianceData[country][f]:'';
+        const value=(complianceData[country]||{})[f]||'';
         html+=`<td>${value}</td>`;
       });
       html+='</tr>';
@@ -326,7 +224,10 @@ window.addEventListener("load", () => {
     document.getElementById('details').textContent='Select a country to view details.';
     jurisdictionSelect.value='';
   }
-});
+}
+
+// Start loading data
+loadComplianceData();
 </script>
 </body>
 </html>
