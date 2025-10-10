@@ -2,7 +2,7 @@
 <html>
 <head>
 <meta charset="utf-8" />
-<title>GDPR Compliance Map</title>
+<title>GDPR Compliance Map — Live Data</title>
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin=""/>
 <style>
@@ -51,7 +51,6 @@ html, body {
 h2 { text-align: center; margin-top: 0; }
 .hidden { display: none; }
 
-/* Toggle Switch */
 .toggle-container { display: flex; align-items: center; justify-content: center; margin-bottom: 12px; gap: 12px; }
 .toggle-label { font-weight: 600; font-size: 14px; }
 .switch { position: relative; display: inline-block; width: 60px; height: 28px; }
@@ -79,7 +78,6 @@ h2 { text-align: center; margin-top: 0; }
 input:checked + .slider { background-color: #07b0a0; }
 input:checked + .slider:before { transform: translateX(32px); }
 
-/* Dropdown */
 #dropdownContainer { display: flex; justify-content: center; margin-bottom: 16px; }
 #jurisdictionSelect {
   width: 90%;
@@ -92,7 +90,6 @@ input:checked + .slider:before { transform: translateX(32px); }
   color: #192543;
 }
 
-/* Buttons */
 #clearAll {
   padding: 10px 18px;
   border: none;
@@ -106,21 +103,18 @@ input:checked + .slider:before { transform: translateX(32px); }
 }
 #clearAll:hover { background: #00a6c5; }
 
-/* Info card */
 #details { flex: none; margin-bottom: 16px; padding: 16px; border-radius: 14px; background: #fff; box-shadow: 0 6px 18px rgba(0,0,0,0.08); }
 #details h3 { margin-bottom: 10px; font-size: 18px; }
 #details p { margin: 4px 0; font-size: 14px; }
 #details .note { font-size: 13px; color: #555; margin-top: 6px; }
 
-/* Comparison area */
 #compareArea {
-  flex: 1; /* grows to fill remaining space */
-  overflow-y: auto; /* vertical scroll if content exceeds space */
+  flex: 1;
+  overflow-y: auto;
   overflow-x: hidden;
   margin-top: 10px;
 }
 
-/* Table */
 #compareArea table {
   border-collapse: separate;
   border-spacing: 0;
@@ -128,7 +122,7 @@ input:checked + .slider:before { transform: translateX(32px); }
   overflow: hidden;
   width: 100%;
   box-shadow: 0 6px 16px rgba(0,0,0,0.08);
-  table-layout: fixed; /* keeps header width fixed */
+  table-layout: fixed;
 }
 #compareArea th, #compareArea td {
   padding: 12px 10px;
@@ -141,7 +135,6 @@ input:checked + .slider:before { transform: translateX(32px); }
 #compareArea td.country { font-weight: bold; color: #fff; text-align: center; }
 #compareArea tbody tr:nth-child(even) td:not(.country) { background-color: #f9f9f9; }
 #compareArea tbody tr:hover td:not(.country) { background-color: #e6f7f5; }
-
 </style>
 </head>
 <body>
@@ -150,7 +143,7 @@ input:checked + .slider:before { transform: translateX(32px); }
 
   <div id="panel">
     <div id="panelContent">
-      <h2>GDPR Compliance Map</h2>
+      <h2>GDPR Compliance Map (Live Data)</h2>
 
       <div class="toggle-container">
         <span class="toggle-label">Comparison Mode</span>
@@ -182,22 +175,55 @@ input:checked + .slider:before { transform: translateX(32px); }
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin></script>
 <script>
-const complianceData = {
-  "France": { authority:"CNIL", law:"GDPR + French Data Protection Act", fines:"Up to €20M or 4%", transfers:"SCCs, adequacy", note:"Strong enforcement history" },
-  "Germany": { authority:"BfDI / State DPAs", law:"GDPR + BDSG", fines:"Up to €20M or 4%", transfers:"SCCs; state rules", note:"State-level variation" },
-  "United Kingdom": { authority:"ICO", law:"UK GDPR + DPA 2018", fines:"Up to £17.5M or 4%", transfers:"UK SCCs", note:"Post-Brexit adequacy" }
-};
+// ---- LIVE DATA SOURCE (World Bank) ----
+let complianceData = {};
 
-const colors = ["#7fc28f","#07b0a0","#00a6c5","#ffd900","#4f9f35","#9b1e66"];
-let compareMode=false, selected={}, order=[], current=null, layerMap={};
+async function loadLiveData() {
+  try {
+    const url = "https://api.worldbank.org/v2/country/all/indicator/IT.NET.USER.ZS?format=json";
+    const res = await fetch(url);
+    const json = await res.json();
+    const records = json[1];
 
-window.addEventListener("load", () => {
+    records.forEach(item => {
+      const country = item.country.value;
+      const value = item.value;
+      if (!country || value === null) return;
+
+      complianceData[country] = {
+        authority: "—",
+        law: "—",
+        transfers: "—",
+        fines: "—",
+        note: `Internet usage: ${value.toFixed(1)}% of population`
+      };
+    });
+
+    console.log("✅ Live data loaded from World Bank API");
+  } catch (err) {
+    console.error("⚠️ Failed to load World Bank data", err);
+  }
+}
+
+function getColorByValue(v) {
+  if (v > 90) return '#005a32';
+  if (v > 70) return '#238b45';
+  if (v > 50) return '#41ab5d';
+  if (v > 30) return '#74c476';
+  if (v > 10) return '#a1d99b';
+  return '#e5f5e0';
+}
+
+// ---- MAIN MAP LOGIC ----
+window.addEventListener("load", async () => {
+  await loadLiveData();
+
   const map = L.map('map', {
     zoomControl: false,
     scrollWheelZoom: false,
     doubleClickZoom: false,
     dragging: false
-  }).setView([50, 20], 1);
+  }).setView([20, 0], 2);
 
   L.rectangle([[-90,-180],[90,180]], { color:'#ffffff', weight:0, fillOpacity:1 }).addTo(map);
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { noWrap:true }).addTo(map);
@@ -207,23 +233,17 @@ window.addEventListener("load", () => {
   function resetColor(layer){ layer.setStyle(baseStyle()); }
 
   const jurisdictionSelect = document.getElementById('jurisdictionSelect');
+  const layerMap = {};
+  let compareMode=false, selected={}, order=[], current=null;
 
-  fetch('countries.geojson')
+  fetch('https://raw.githubusercontent.com/johan/world.geo.json/master/countries.geo.json')
     .then(r=>r.json())
     .then(data=>{
-      data.features = data.features.filter(f=>{
-        const name=f.properties.ADMIN||f.properties.NAME||f.properties.name_long||f.properties.name||"Unknown";
-        return name!=="Antarctica";
-      });
-
-      data.features.sort((a,b)=>{
-        const nameA=(a.properties.ADMIN||a.properties.NAME||a.properties.name_long||a.properties.name||"").toUpperCase();
-        const nameB=(b.properties.ADMIN||b.properties.NAME||b.properties.name_long||b.properties.name||"").toUpperCase();
-        return nameA.localeCompare(nameB);
-      });
+      data.features = data.features.filter(f=>f.properties.name!=="Antarctica");
+      data.features.sort((a,b)=>a.properties.name.localeCompare(b.properties.name));
 
       data.features.forEach(f=>{
-        const name=f.properties.ADMIN||f.properties.NAME||f.properties.name_long||f.properties.name||"Unknown";
+        const name=f.properties.name;
         const option=document.createElement('option');
         option.value=name;
         option.textContent=name;
@@ -233,7 +253,7 @@ window.addEventListener("load", () => {
       L.geoJSON(data, {
         style: baseStyle,
         onEachFeature:(feature,layer)=>{
-          const name=feature.properties.ADMIN||feature.properties.NAME||feature.properties.name_long||feature.properties.name||"Unknown";
+          const name=feature.properties.name;
           layerMap[name]=layer;
           layer.on('click',()=>handleClick(name));
         }
@@ -262,20 +282,29 @@ window.addEventListener("load", () => {
   document.getElementById('clearAll').onclick=clearAll;
 
   function addToSelection(name){
-    const color = colors[order.length % colors.length];
+    const value = extractValue(name);
+    const color = getColorByValue(value);
     selected[name]=color; order.push(name);
     setColor(layerMap[name],color);
   }
 
+  function extractValue(name){
+    const note = complianceData[name]?.note || '';
+    return parseFloat(note.match(/([\d.]+)/)?.[1] || 0);
+  }
+
   function handleClick(name){
     const layer=layerMap[name]; if(!layer) return;
+    const value = extractValue(name);
+    const color = getColorByValue(value);
+
     if(compareMode){
-      if(selected[name]){ delete selected[name]; order=order.filter(n=>n!==name); resetColor(layer);}
+      if(selected[name]){ delete selected[name]; order=order.filter(n=>n!==name); resetColor(layer); }
       else{ addToSelection(name); }
       document.getElementById('details').classList.add('hidden');
     } else {
       if(current && current!==layer) resetColor(current);
-      current=layer; setColor(layer,colors[0]);
+      current=layer; setColor(layer,color);
       document.getElementById('details').classList.remove('hidden');
       showDetails(name);
     }
@@ -287,7 +316,7 @@ window.addEventListener("load", () => {
     const d=complianceData[name];
     const el=document.getElementById('details');
     if(!d){
-      el.innerHTML=`<h3>${name}</h3><p>No data yet.</p>`;
+      el.innerHTML=`<h3>${name}</h3><p>No live data available.</p>`;
     } else {
       el.innerHTML=`<h3>${name}</h3>
         <p><strong>Authority:</strong> ${d.authority}</p>
