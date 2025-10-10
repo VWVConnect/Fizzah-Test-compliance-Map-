@@ -197,7 +197,7 @@ window.addEventListener("load", () => {
     scrollWheelZoom: false,
     doubleClickZoom: false,
     dragging: false
-  }).setView([50, 20], 1.5);
+  }).setView([50, 20], 1);
 
   L.rectangle([[-90,-180],[90,180]], { color:'#ffffff', weight:0, fillOpacity:1 }).addTo(map);
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { noWrap:true }).addTo(map);
